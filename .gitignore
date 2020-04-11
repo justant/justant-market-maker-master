@@ -1,0 +1,8 @@
+/settings.py
+*.pyc
+dist/
+*.egg-info/
+env
+.idea/
+
+key_secret.txt
