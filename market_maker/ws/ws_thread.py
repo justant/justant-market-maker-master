@@ -51,6 +51,7 @@ class BitMEXWebsocket():
         subscriptions += ["trade"]  # We want all of them
         subscriptions += ["tradeBin1m:XBTUSD"]  # We want all of them
 
+
         if self.shouldAuth:
             subscriptions += [sub + ':' + symbol for sub in ["order", "execution"]]
             subscriptions += ["margin", "position"]
@@ -131,15 +132,9 @@ class BitMEXWebsocket():
         return self.data['trade']
 
     def get_tradeBin1m(self):
-        symbol ='XBTUSD'
         tradeBin1ms = self.data['tradeBin1m']
-        #matchingBin = [i for i in tradeBin1ms if i['symbol'] == symbol]
-        #if len(matchingBin) == 0:
-        #    raise Exception("Unable to find tradeBin1ms or index with symbol: " + symbol)
 
-        #return matchingBin[0];
-        #return tradeBin1ms[len(tradeBin1ms)-1];
-        return tradeBin1ms;
+        return tradeBin1ms[len(tradeBin1ms)-1];
 
     # Lifecycle methods
     #

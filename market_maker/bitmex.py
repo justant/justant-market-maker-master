@@ -368,3 +368,25 @@ class BitMEX(object):
         self.retries = 0
 
         return response.json()
+
+    #Retrieving Full Historical Data
+
+    #bitmex_client = bitmex(test=False, api_key=bitmex_api_key, api_secret=bitmex_api_secret)
+
+    def minutes_of_new_data(self, symbol, min_span):
+        path = "trade/bucketed"
+
+        now = datetime.datetime.utcnow()
+        previous_time = now - datetime.timedelta(minutes=min_span)
+        dt_string = previous_time.strftime("%Y-%m-%dT%H:%M:%S")
+
+        self.logger.info("[minutes_of_new_data] start date and time " + str(dt_string))
+
+        postdict = {
+            'symbol': symbol,
+            'binSize': '1m',
+            'count' : 20,
+            'startTime' : dt_string
+        }
+
+        return self._curl_bitmex(path=path, postdict=postdict, verb="GET", rethrow_errors=True)

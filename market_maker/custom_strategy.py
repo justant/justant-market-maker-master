@@ -4,19 +4,24 @@ import sys
 from time import sleep
 import logging
 
-from market_maker import plot_thread, _settings_base
-from market_maker.plot_thread import plotThread
+from market_maker import _settings_base
+from market_maker.plot.bitmex_plot import bitmex_plot
 from market_maker.market_maker import OrderManager
 from market_maker.settings import settings
-
+import threading
 
 LOOP_INTERVAL = 1
 
 logger = logging.getLogger('root')
-th = plotThread()
+bitmex_plot = bitmex_plot()
 
-class CustomOrderManager(OrderManager):
+class CustomOrderManager(OrderManager, threading.Thread):
     """A sample order manager for implementing your own custom strategy"""
+    def __init__(self):
+        super().__init__()
+        threading.Thread.__init__(self)
+        self.__suspend = False
+        self.__exit = False
 
     def place_orders(self) -> None:
         # implement your custom strategy here
@@ -31,6 +36,8 @@ class CustomOrderManager(OrderManager):
         self.converge_orders(buy_orders, sell_orders)
 
     def run_loop(self):
+        logger.info("[CustomOrderManager][run_loop]")
+
         while True:
             sys.stdout.write("-----\n")
             sys.stdout.flush()
@@ -49,31 +56,32 @@ class CustomOrderManager(OrderManager):
             #self.place_orders()  # Creates desired orders and converges to existing orders
 
             contents = self.exchange.get_instrument()['lastPrice']
-            bin1m = self.exchange.get_tradeBin1m();
-
             logger.info("[CustomOrderManager][run_loop] test_instrument(lastPrice) : " + str(contents))
-            #logger.info("[CustomOrderManager][run_loop] bin1m : " + str(bin1m))
 
-            plot_thread.data_listener(bin1m)
+            update_required = self.exchange.get_tradeBin1m();
+            logger.info("[CustomOrderManager][run_loop] update_required : " + str(update_required))
 
+            if update_required:
+                bitmex_plot.data_listener()
 
-
-
-
-
+    def run(self):
+        logger.info("[CustomOrderManager][run]")
+        self.run_loop()
 
 def run() -> None:
     order_manager = CustomOrderManager()
 
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
     try:
-        # getApiKey
-        th.start()
-        order_manager.run_loop()
-    except (KeyboardInterrupt, SystemExit):
-        sys.exit()
-        th.stop()
+        order_manager.start()
+        #order_manager.run_loop()
+        bitmex_plot.run()
 
+    except (KeyboardInterrupt, SystemExit):
+        order_manager.stop()
+        sys.exit()
+
+# getApiKey
 def setApi():
     script_dir = pathlib.Path(__file__).parent.parent
     #script_dir = os.path.dirname(__file__).parent().parent() #<-- absolute dir the script is in

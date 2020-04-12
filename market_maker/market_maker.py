@@ -16,6 +16,9 @@ from market_maker.utils import log, constants, errors, math, common_util
 
 # Used for reloading the bot - saves modified times of key files
 import os
+
+from market_maker.utils.singleton import ohlc_data
+
 watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
 
@@ -148,36 +151,49 @@ class ExchangeInterface:
         return self.bitmex.instrument(symbol)
 
     def get_tradeBin1m(self):
+        update_required = False
+
         logger.info("[ExchangeInterface][get_tradeBin1m]")
         bin1m = self.bitmex.tradeBin1m()
 
-        df = pd.DataFrame(bin1m, columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'trades', 'volume', 'vwap', 'lastSize', 'turnover', 'homeNotional', 'foreignNotional'])
-        logger.info("[ExchangeInterface][get_tradeBin1m] df.to_string() " + df.to_string())
-
-        #convert TrieDateField time to
-        #ts = df['timestamp']
         ts = []
-        for i in range(0, len(bin1m)):
-            ts.append(common_util.coonvertDateFormat(bin1m[i]['timestamp']))
+        ts.append(common_util.coonvertDateFormat(bin1m['timestamp']))
 
-        df2 = pd.DataFrame({
-            'timestamp' : [bin1m[i]['timestamp'] for i in range(0, len(bin1m))],
-            'symbol' : [bin1m[i]['symbol'] for i in range(0, len(bin1m))],
-            'open' : [bin1m[i]['open'] for i in range(0, len(bin1m))],
-            'high' : [bin1m[i]['high'] for i in range(0, len(bin1m))],
-            'low' : [bin1m[i]['low'] for i in range(0, len(bin1m))],
-            'close' : [bin1m[i]['close'] for i in range(0, len(bin1m))],
-            'trades' : [bin1m[i]['trades'] for i in range(0, len(bin1m))],
-            'volume' : [bin1m[i]['volume'] for i in range(0, len(bin1m))],
-            'vwap' : [bin1m[i]['vwap'] for i in range(0, len(bin1m))],
-            'lastSize' : [bin1m[i]['lastSize'] for i in range(0, len(bin1m))],
-            'turnover' : [bin1m[i]['turnover'] for i in range(0, len(bin1m))],
-            'homeNotional' : [bin1m[i]['homeNotional'] for i in range(0, len(bin1m))],
-            'foreignNotional' : [bin1m[i]['foreignNotional'] for i in range(0, len(bin1m))]},
-            index=pd.to_datetime([ts[i] for m in range(0, len(bin1m))]))
-            #index=pd.to_datetime([datetime(2019,1,1) + timedelta(minutes=m) for m in range(0, len(bin1m))]))
+        df = pd.DataFrame({
+            'timestamp' : [bin1m['timestamp']],
+            'symbol' : [bin1m['symbol']],
+            'open' : [bin1m['open']],
+            'high' : [bin1m['high']],
+            'low' : [bin1m['low']],
+            'close' : [bin1m['close']],
+            'trades' : [bin1m['trades']],
+            'volume' : [bin1m['volume']],
+            'vwap' : [bin1m['vwap']],
+            'lastSize' : [bin1m['lastSize']],
+            'turnover' : [bin1m['turnover']],
+            'homeNotional' : [bin1m['homeNotional']],
+            'foreignNotional' : [bin1m['foreignNotional']]},
+            index=pd.to_datetime([ts[0]]))
 
-        return df2
+        df["open"] = df["open"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["close"] = df["close"].astype(float)
+        df["trades"] = df["trades"].astype(float)
+        df["volume"] = df["volume"].astype(float)
+        df["vwap"] = df["vwap"].astype(float)
+        df["lastSize"] = df["lastSize"].astype(float)
+        df["turnover"] = df["turnover"].astype(float)
+        df["homeNotional"] = df["homeNotional"].astype(float)
+        df["foreignNotional"] = df["foreignNotional"].astype(float)
+
+        pre_cnt = ohlc_data._getInstance().getDataCnt()
+        ohlc_data._getInstance().appendData(df)
+        post_cnt = ohlc_data._getInstance().getDataCnt()
+
+        if post_cnt > pre_cnt:
+            update_required = True
+
+        return update_required
 
     def get_margin(self):
         logger.info("[ExchangeInterface][get_margin]")
@@ -268,7 +284,16 @@ class ExchangeInterface:
             return orders
         return self.bitmex.cancel([order['orderID'] for order in orders])
 
-class OrderManager:
+    def minutes_of_new_data(self, min_span):
+        logger.info("[ExchangeInterface][minutes_of_new_data]")
+
+        if self.dry_run:
+            return min_span
+        symbol = settings.SYMBOL
+
+        return self.bitmex.minutes_of_new_data(symbol, min_span)
+
+class OrderManager():
     def __init__(self):
         logger.info("[OrderManager][__init__]")
 
@@ -290,6 +315,50 @@ class OrderManager:
         self.starting_qty = self.exchange.get_delta()
         self.running_qty = self.starting_qty
         self.reset()
+        self.setInitOHLC()
+
+    def setInitOHLC(self):
+        logger.info("[OrderManager][setInitOHLC]")
+
+        bin1m = self.exchange.minutes_of_new_data(20)
+
+        #df = pd.DataFrame(bin1m, columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'trades', 'volume', 'vwap', 'lastSize', 'turnover', 'homeNotional', 'foreignNotional'])
+        #logger.info("[OrderManager][setInitOHLC] df.to_string() " + df.to_string())
+
+        #convert TrieDateField time to
+        ts = []
+        for i in range(0, len(bin1m)):
+            ts.append(common_util.coonvertDateFormat(bin1m[i]['timestamp']))
+
+        df = pd.DataFrame({
+            'timestamp' : [bin1m[i]['timestamp'] for i in range(0, len(bin1m))],
+            'symbol' : [bin1m[i]['symbol'] for i in range(0, len(bin1m))],
+            'open' : [bin1m[i]['open'] for i in range(0, len(bin1m))],
+            'high' : [bin1m[i]['high'] for i in range(0, len(bin1m))],
+            'low' : [bin1m[i]['low'] for i in range(0, len(bin1m))],
+            'close' : [bin1m[i]['close'] for i in range(0, len(bin1m))],
+            'trades' : [bin1m[i]['trades'] for i in range(0, len(bin1m))],
+            'volume' : [bin1m[i]['volume'] for i in range(0, len(bin1m))],
+            'vwap' : [bin1m[i]['vwap'] for i in range(0, len(bin1m))],
+            'lastSize' : [bin1m[i]['lastSize'] for i in range(0, len(bin1m))],
+            'turnover' : [bin1m[i]['turnover'] for i in range(0, len(bin1m))],
+            'homeNotional' : [bin1m[i]['homeNotional'] for i in range(0, len(bin1m))],
+            'foreignNotional' : [bin1m[i]['foreignNotional'] for i in range(0, len(bin1m))]},
+            index=pd.to_datetime([ts[i] for i in range(0, len(bin1m))]))
+
+        df["open"] = df["open"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["close"] = df["close"].astype(float)
+        df["trades"] = df["trades"].astype(float)
+        df["volume"] = df["volume"].astype(float)
+        df["vwap"] = df["vwap"].astype(float)
+        df["lastSize"] = df["lastSize"].astype(float)
+        df["turnover"] = df["turnover"].astype(float)
+        df["homeNotional"] = df["homeNotional"].astype(float)
+        df["foreignNotional"] = df["foreignNotional"].astype(float)
+
+
+        ohlc_data.instance().setData(df)
 
     def reset(self):
         logger.info("[OrderManager][reset]")
