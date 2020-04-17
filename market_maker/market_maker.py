@@ -320,15 +320,15 @@ class OrderManager():
     def setInitOHLC(self):
         logger.info("[OrderManager][setInitOHLC]")
 
-        bin1m = self.exchange.minutes_of_new_data(20)
+        bin1m = self.exchange.minutes_of_new_data(60)
 
         #df = pd.DataFrame(bin1m, columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'trades', 'volume', 'vwap', 'lastSize', 'turnover', 'homeNotional', 'foreignNotional'])
         #logger.info("[OrderManager][setInitOHLC] df.to_string() " + df.to_string())
 
         #convert TrieDateField time to
-        ts = []
-        for i in range(0, len(bin1m)):
-            ts.append(common_util.coonvertDateFormat(bin1m[i]['timestamp']))
+        #ts = []
+        #for i in range(0, len(bin1m)):
+        #    ts.append(common_util.coonvertDateFormat(bin1m[i]['timestamp']))
 
         df = pd.DataFrame({
             'timestamp' : [bin1m[i]['timestamp'] for i in range(0, len(bin1m))],
@@ -344,7 +344,8 @@ class OrderManager():
             'turnover' : [bin1m[i]['turnover'] for i in range(0, len(bin1m))],
             'homeNotional' : [bin1m[i]['homeNotional'] for i in range(0, len(bin1m))],
             'foreignNotional' : [bin1m[i]['foreignNotional'] for i in range(0, len(bin1m))]},
-            index=pd.to_datetime([ts[i] for i in range(0, len(bin1m))]))
+            index=pd.to_datetime([bin1m[i]['timestamp'] for i in range(0, len(bin1m))]))
+            #index=pd.to_datetime([ts[i] for i in range(0, len(bin1m))]))
 
         df["open"] = df["open"].astype(float)
         df["high"] = df["high"].astype(float)

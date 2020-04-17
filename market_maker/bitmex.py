@@ -385,7 +385,7 @@ class BitMEX(object):
         postdict = {
             'symbol': symbol,
             'binSize': '1m',
-            'count' : 20,
+            'count' : min_span,
             'startTime' : dt_string
         }
 

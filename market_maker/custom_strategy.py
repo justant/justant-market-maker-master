@@ -4,7 +4,7 @@ import sys
 from time import sleep
 import logging
 
-from market_maker import _settings_base
+#from market_maker import _settings_base
 from market_maker.plot.bitmex_plot import bitmex_plot
 from market_maker.market_maker import OrderManager
 from market_maker.settings import settings
@@ -90,8 +90,11 @@ def setApi():
     abs_file_path = os.path.join(script_dir, rel_path)
 
     r = open(abs_file_path, mode='rt', encoding='utf-8')
-    key = r.readline().split('=')[1]
-    secret = r.readline().split('=')[1]
+    list = r.read().splitlines()
+    key = list[0].split('=')[1]
+    secret = list[1].split('=')[1]
 
-    _settings_base.API_KEY = key
-    _settings_base.API_SECRET = secret
+    #_settings_base.API_KEY = key
+    #_settings_base.API_SECRET = secret
+    settings.API_KEY = key
+    settings.API_SECRET = secret
