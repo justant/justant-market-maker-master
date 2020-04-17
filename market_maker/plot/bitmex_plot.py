@@ -17,10 +17,7 @@ from market_maker.utils.singleton import ohlc_data
 
 logger = log.setup_custom_logger('root')
 
-flag = False
 ticker = 'BTC-USD'
-temp_cnt = 0
-
 
 style.use('fivethirtyeight')
 
@@ -44,6 +41,8 @@ class bitmex_plot():
         self.Y_AXIS_SIZE = 12
         self.LINE_WIDTH = 1
 
+        self.update_flag = False
+
     def run(self):
         logger.info("[bitmex_plot][run]")
 
@@ -57,6 +56,7 @@ class bitmex_plot():
 
         #self.analysis = pd.DataFrame(index = sec_id.index)
         self.analysis = pd.DataFrame(index = date2num(sec_id.index))
+        #self.analysis.Date.dt.tz_localize('UTC')
 
         self.analysis['sma_f'] = sec_id.close.rolling(self.SMA_FAST).mean()
         self.analysis['sma_s'] = sec_id.close.rolling(self.SMA_SLOW).mean()
@@ -66,9 +66,9 @@ class bitmex_plot():
         self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
 
         self.analysis['sma'] = np.where(self.analysis.sma_f > self.analysis.sma_s, 1, 0)
-        self.analysis['macd_test'] = np.where((self.analysis.macd > self.analysis.macdSignal), 1, 0)
-        self.analysis['stoch_k_test'] = np.where((self.analysis.stoch_k < 50) & (self.analysis.stoch_k > self.analysis.stoch_k.shift(1)), 1, 0)
-        self.analysis['rsi_test'] = np.where((self.analysis.rsi < 50) & (self.analysis.rsi > self.analysis.rsi.shift(1)), 1, 0)
+        #self.analysis['macd_test'] = np.where((self.analysis.macd > self.analysis.macdSignal), 1, 0)
+        #self.analysis['stoch_k_test'] = np.where((self.analysis.stoch_k < 50) & (self.analysis.stoch_k > self.analysis.stoch_k.shift(1)), 1, 0)
+        #self.analysis['rsi_test'] = np.where((self.analysis.rsi < 50) & (self.analysis.rsi > self.analysis.rsi.shift(1)), 1, 0)
 
         # Prepare plot
         self.fig, (self.ax1, self.ax2, self.ax3, self.ax4) = plt.subplots(4, 1, sharex=True)
@@ -94,7 +94,7 @@ class bitmex_plot():
         self.analysis.rsi.plot(ax = self.ax2, c='g', label = 'Period: ' + str(self.RSI_PERIOD), linewidth=self.LINE_WIDTH)
         self.analysis.sma_r.plot(ax = self.ax2, c='r', label = 'MA: ' + str(self.RSI_AVG_PERIOD), linewidth=self.LINE_WIDTH)
         self.ax2.axhline(y=30, c='b', linewidth=self.LINE_WIDTH)
-        self.ax2.axhline(y=50, c='black', linewidth=self.LINE_WIDTH)
+        #self.ax2.axhline(y=50, c='black', linewidth=self.LINE_WIDTH)
         self.ax2.axhline(y=70, c='b', linewidth=self.LINE_WIDTH)
         self.ax2.set_ylim([0,100])
         handles, labels = self.ax2.get_legend_handles_labels()
@@ -124,13 +124,9 @@ class bitmex_plot():
         plt.show()
 
     def animate(self, i):
-        cnt = ohlc_data._getInstance().getDataCnt()
-        logger.info("[plotThread][animate] cnt " + str(cnt))
+        logger.info("[plotThread][animate] self.update_flag " + str(self.update_flag))
 
-        if cnt > self.current_data_cnt:
-            self.current_data_cnt = cnt
-            logger.info("[plotThread][animate] current_data_cnt " + str(self.current_data_cnt))
-
+        if self.update_flag:
             sec_id = ohlc_data._getInstance().getData()
 
             sec_id_ochl = np.array(pd.DataFrame({'0':date2num(sec_id.index),
@@ -141,7 +137,10 @@ class bitmex_plot():
 
             logger.info("[plotThread][animate] sec_id_ochl " + str(sec_id_ochl))
 
+            logger.info("[plotThread][animate] 0")
             self.analysis = pd.DataFrame(index = sec_id.index)
+
+            logger.info("[plotThread][animate] l")
 
             self.analysis['sma_f'] = sec_id.close.rolling(self.SMA_FAST).mean()
             self.analysis['sma_s'] = sec_id.close.rolling(self.SMA_SLOW).mean()
@@ -151,9 +150,6 @@ class bitmex_plot():
             self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
 
             self.analysis['sma'] = np.where(self.analysis.sma_f > self.analysis.sma_s, 1, 0)
-            self.analysis['macd_test'] = np.where((self.analysis.macd > self.analysis.macdSignal), 1, 0)
-            self.analysis['stoch_k_test'] = np.where((self.analysis.stoch_k < 50) & (self.analysis.stoch_k > self.analysis.stoch_k.shift(1)), 1, 0)
-            self.analysis['rsi_test'] = np.where((self.analysis.rsi < 50) & (self.analysis.rsi > self.analysis.rsi.shift(1)), 1, 0)
 
             # Plot candles width=.6/(24*60)
             candlestick(self.ax1, sec_id_ochl, width=.6/(24*60), colorup='g', colordown='r', alpha=1)
@@ -174,8 +170,9 @@ class bitmex_plot():
 
             self.analysis.stoch_k.plot(ax=self.ax4, label='stoch_k:'+ str(self.STOCH_K), color='r', linewidth=self.LINE_WIDTH)
             self.analysis.stoch_d.plot(ax=self.ax4, label='stoch_d:'+ str(self.STOCH_D), color='g', linewidth=self.LINE_WIDTH)
+
+            self.update_flag = False
+            logger.info("[plotThread][animate] 8")
     def data_listener(self):
         logger.info("[bitmex_plot][data_listener]")
-        #df = ohlc_data._getInstance().getData()
-
-        #logger.info("[plotThread][data_listener] df.to_string() " + df.to_string())
+        self.update_flag = True

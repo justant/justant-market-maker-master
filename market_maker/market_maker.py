@@ -156,8 +156,8 @@ class ExchangeInterface:
         logger.info("[ExchangeInterface][get_tradeBin1m]")
         bin1m = self.bitmex.tradeBin1m()
 
-        ts = []
-        ts.append(common_util.coonvertDateFormat(bin1m['timestamp']))
+        #ts = []
+        #ts.append(common_util.coonvertDateFormat(bin1m['timestamp']))
 
         df = pd.DataFrame({
             'timestamp' : [bin1m['timestamp']],
@@ -173,7 +173,8 @@ class ExchangeInterface:
             'turnover' : [bin1m['turnover']],
             'homeNotional' : [bin1m['homeNotional']],
             'foreignNotional' : [bin1m['foreignNotional']]},
-            index=pd.to_datetime([ts[0]]))
+            index=pd.to_datetime([bin1m['timestamp'] for i in range(0, len(bin1m))]))
+
 
         df["open"] = df["open"].astype(float)
         df["high"] = df["high"].astype(float)
@@ -186,12 +187,7 @@ class ExchangeInterface:
         df["homeNotional"] = df["homeNotional"].astype(float)
         df["foreignNotional"] = df["foreignNotional"].astype(float)
 
-        pre_cnt = ohlc_data._getInstance().getDataCnt()
-        ohlc_data._getInstance().appendData(df)
-        post_cnt = ohlc_data._getInstance().getDataCnt()
-
-        if post_cnt > pre_cnt:
-            update_required = True
+        update_required = ohlc_data._getInstance().appendData(df)
 
         return update_required
 
