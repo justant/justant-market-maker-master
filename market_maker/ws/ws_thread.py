@@ -47,14 +47,21 @@ class BitMEXWebsocket():
         # We can subscribe right in the connection querystring, so let's build that.
         # Subscribe to all pertinent endpoints
         subscriptions = [sub + ':' + symbol for sub in ["quote", "trade"]]
-        subscriptions += ["instrument"]  # We want all of them
-        subscriptions += ["trade"]  # We want all of them
-        subscriptions += ["tradeBin1m:XBTUSD"]  # We want all of them
+        subscriptions += ["instrument:" + symbol]  # We want all of them
+        #subscriptions += ["trade"]  # We want all of them
+        subscriptions += ["tradeBin1m:" + symbol]  # We want all of them
+
 
 
         if self.shouldAuth:
-            subscriptions += [sub + ':' + symbol for sub in ["order", "execution"]]
-            subscriptions += ["margin", "position"]
+            #subscriptions += ["affiliate"]  # Affiliate status, such as total referred users & payout %
+            #subscriptions += ["execution"]  # Individual executions; can be multiple per order
+            subscriptions += ["order"]  # Live updates on your orders
+            subscriptions += ["margin"]  # Updates on your current account balance and margin requirements
+            subscriptions += ["position"]  # Updates on your positions
+            #subscriptions += ["privateNotifications"]  # Individual notifications - currently not used
+            #subscriptions += ["transact"]  # Deposit/Withdrawal updates
+            #subscriptions += ["wallet"]  # Bitcoin address balance data, including total deposits & withdrawals
 
         # Get WS URL and connect.
         urlParts = list(urlparse(endpoint))

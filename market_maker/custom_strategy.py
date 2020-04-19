@@ -3,6 +3,7 @@ import pathlib
 import sys
 from time import sleep
 import logging
+import pandas as pd
 
 #from market_maker import _settings_base
 from market_maker.plot.bitmex_plot import bitmex_plot
@@ -22,6 +23,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
         threading.Thread.__init__(self)
         self.__suspend = False
         self.__exit = False
+        self.analysis = pd.DataFrame()
+        self.allow_buy = True
 
     def place_orders(self) -> None:
         # implement your custom strategy here
@@ -34,6 +37,85 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # sell_orders.append({'price': 1001.0, 'orderQty': 100, 'side': "Sell"})
 
         self.converge_orders(buy_orders, sell_orders)
+    def check_current_strategy(self):
+        logger.info("[CustomOrderManager][check_current_strategy] self.analysis['rsi'] " + str(self.analysis['rsi']))
+        logger.info("[CustomOrderManager][check_current_strategy] self.analysis['stoch_k'] " + str(self.analysis['stoch_k']))
+        logger.info("[CustomOrderManager][check_current_strategy] self.allow_buy " + str(self.allow_buy))
+        #self.print_status()
+
+        buy_orders = []
+        sell_orders = []
+
+        # buy
+        default_Qty = 10
+        if self.allow_buy:
+            if self.analysis['rsi'][0] < 30.0 and self.analysis['stoch_k'][0] < 30.0:
+                logger.info("[CustomOrderManager][check_current_strategy][buy} rsi under 30.0 & stock_k under 30.0")
+            #if True:
+                current_price = self.exchange.get_instrument()['lastPrice']
+
+                for i in range(1, 21):
+                    buy_orders.append({'price': current_price - i + 1, 'orderQty': default_Qty * i, 'side': "Buy"})
+
+
+                self.converge_orders(buy_orders, [])
+                self.allow_buy = False
+                logger.info("[CustomOrderManager][check_current_strategy][buy} after self.converge_orders")
+                logger.info("[CustomOrderManager][check_current_strategy][buy} self.allow_buy " + str(self.allow_buy))
+
+        # sell # move to thread
+        if not self.allow_buy:
+            if self.analysis['rsi'][0] > 70.0 and self.analysis['stoch_k'][0] > 70.0:
+            #if True:
+                logger.info("[CustomOrderManager][check_current_strategy][sell] rsi over 70.0 & stock_k over 70.0")
+                self.exchange.cancel_all_orders()
+
+                cnt = 0
+                while not self.allow_buy:
+                    logger.info("[CustomOrderManager][check_current_strategy][sell] current_price > avgCostPrice")
+                    # realized profit
+                    current_price = self.exchange.get_instrument()['lastPrice']
+                    position = self.exchange.get_position()
+                    avgCostPrice = position['avgCostPrice']
+                    currentQty = position['currentQty']
+                    if current_price > avgCostPrice:
+                        logger.info("[CustomOrderManager][check_current_strategy][sell] current_price > avgCostPrice")
+                        logger.info("[CustomOrderManager][check_current_strategy][sell] avgCostPrice : " + str(avgCostPrice))
+                        logger.info("[CustomOrderManager][check_current_strategy][sell] currentQty : " + str(currentQty))
+
+                        # 주문 모두삭제 & 새로 추가 가 아니라 주문 수정으로 바꿔줄 필요가 있다
+                        self.exchange.cancel_all_orders()
+                        sell_orders = []
+                        sell_orders.append({'price': current_price + 1, 'orderQty': currentQty, 'side': "Sell"})
+                        self.converge_orders([], sell_orders)
+
+                        wait = 0
+                        while True:
+                            wait += 1
+                            orders = self.exchange.get_orders()
+                            logger.info("[CustomOrderManager][check_current_strategy][sell] orders : " + str(orders))
+
+                            if len(orders) == 0:
+                                # 매도 완료!
+                                logger.info("[CustomOrderManager][check_current_strategy][sell] len(orders) == 0")
+                                self.allow_buy = True
+                                break
+                            if wait > 10:
+                                logger.info("[CustomOrderManager][check_current_strategy][sell] wait > 10")
+                                break
+                            sleep(1)
+                    else :
+                        if self.allow_buy:
+                            logger.info("[CustomOrderManager][check_current_strategy][sell] else break")
+                            break
+                        cnt += 1
+                        sleep(1)
+                        if cnt > 120:
+                            logger.info("[CustomOrderManager][check_current_strategy][sell] cnt > 120")
+                            self.allow_buy = True
+                            break
+
+                self.converge_orders([], sell_orders)
 
     def run_loop(self):
         logger.info("[CustomOrderManager][run_loop]")
@@ -62,7 +144,10 @@ class CustomOrderManager(OrderManager, threading.Thread):
             logger.info("[CustomOrderManager][run_loop] update_required : " + str(update_required))
 
             if update_required:
-                bitmex_plot.data_listener()
+                self.analysis = bitmex_plot.plot_update()
+                self.check_current_strategy()
+
+
 
     def run(self):
         logger.info("[CustomOrderManager][run]")

@@ -135,12 +135,9 @@ class bitmex_plot():
                                                  '3':sec_id.high,
                                                  '4':sec_id.low}))
 
-            logger.info("[plotThread][animate] sec_id_ochl " + str(sec_id_ochl))
+            #logger.info("[plotThread][animate] sec_id_ochl " + str(sec_id_ochl))
 
-            logger.info("[plotThread][animate] 0")
             self.analysis = pd.DataFrame(index = sec_id.index)
-
-            logger.info("[plotThread][animate] l")
 
             self.analysis['sma_f'] = sec_id.close.rolling(self.SMA_FAST).mean()
             self.analysis['sma_s'] = sec_id.close.rolling(self.SMA_SLOW).mean()
@@ -172,7 +169,16 @@ class bitmex_plot():
             self.analysis.stoch_d.plot(ax=self.ax4, label='stoch_d:'+ str(self.STOCH_D), color='g', linewidth=self.LINE_WIDTH)
 
             self.update_flag = False
-            logger.info("[plotThread][animate] 8")
-    def data_listener(self):
-        logger.info("[bitmex_plot][data_listener]")
+
+    def plot_update(self):
+        logger.info("[bitmex_plot][plot_update]")
         self.update_flag = True
+
+        test_cnt = 1
+        while self.update_flag :
+            #logger.info("[bitmex_plot][plot_update] test_cnt " + str(test_cnt))
+            time.sleep(0.1)
+
+        return self.analysis.iloc[-1:]
+
+
