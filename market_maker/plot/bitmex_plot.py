@@ -13,7 +13,7 @@ from mpl_finance import candlestick_ohlc as candlestick
 from market_maker.utils import log
 import time
 
-from market_maker.utils.singleton import ohlc_data
+from market_maker.utils.singleton import singleton_data
 
 logger = log.setup_custom_logger('root')
 
@@ -46,7 +46,7 @@ class bitmex_plot():
     def run(self):
         logger.info("[bitmex_plot][run]")
 
-        sec_id = ohlc_data._getInstance().getData()
+        sec_id = singleton_data.getInstance().getOHLC_data()
 
         self.sec_id_ochl = np.array(pd.DataFrame({'0':date2num(sec_id.index),#.to_pydatetime()),
                                              '1':sec_id.open,
@@ -63,7 +63,7 @@ class bitmex_plot():
         self.analysis['rsi'] = ta.RSI(sec_id.close.to_numpy(), self.RSI_PERIOD)
         self.analysis['sma_r'] = self.analysis.rsi.rolling(self.RSI_PERIOD).mean()
         self.analysis['macd'], self.analysis['macdSignal'], self.analysis['macdHist'] = ta.MACD(sec_id.close.to_numpy(), fastperiod=self.MACD_FAST, slowperiod=self.MACD_SLOW, signalperiod=self.MACD_SIGNAL)
-        self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
+        self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0) #slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
 
         self.analysis['sma'] = np.where(self.analysis.sma_f > self.analysis.sma_s, 1, 0)
         #self.analysis['macd_test'] = np.where((self.analysis.macd > self.analysis.macdSignal), 1, 0)
@@ -124,10 +124,10 @@ class bitmex_plot():
         plt.show()
 
     def animate(self, i):
-        logger.info("[plotThread][animate] self.update_flag " + str(self.update_flag))
+        #logger.info("[plotThread][animate] self.update_flag " + str(self.update_flag))
 
         if self.update_flag:
-            sec_id = ohlc_data._getInstance().getData()
+            sec_id = singleton_data.getInstance().getOHLC_data()
 
             sec_id_ochl = np.array(pd.DataFrame({'0':date2num(sec_id.index),
                                                  '1':sec_id.open,
@@ -144,7 +144,7 @@ class bitmex_plot():
             self.analysis['rsi'] = ta.RSI(sec_id.close.to_numpy(), self.RSI_PERIOD)
             self.analysis['sma_r'] = self.analysis.rsi.rolling(self.RSI_PERIOD).mean()
             self.analysis['macd'], self.analysis['macdSignal'], self.analysis['macdHist'] = ta.MACD(sec_id.close.to_numpy(), fastperiod=self.MACD_FAST, slowperiod=self.MACD_SLOW, signalperiod=self.MACD_SIGNAL)
-            self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
+            self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0)#slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
 
             self.analysis['sma'] = np.where(self.analysis.sma_f > self.analysis.sma_s, 1, 0)
 
@@ -174,9 +174,10 @@ class bitmex_plot():
         logger.info("[bitmex_plot][plot_update]")
         self.update_flag = True
 
-        test_cnt = 1
+        wait_plotupdate = 0
         while self.update_flag :
-            #logger.info("[bitmex_plot][plot_update] test_cnt " + str(test_cnt))
+            wait_plotupdate += 1
+            #logger.info("[bitmex_plot][plot_update] wait_plotupdate " + str(wait_plotupdate))
             time.sleep(0.1)
 
         return self.analysis.iloc[-1:]

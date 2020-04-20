@@ -17,7 +17,7 @@ from market_maker.utils import log, constants, errors, math, common_util
 # Used for reloading the bot - saves modified times of key files
 import os
 
-from market_maker.utils.singleton import ohlc_data
+from market_maker.utils.singleton import singleton_data
 
 watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
@@ -144,7 +144,7 @@ class ExchangeInterface:
         return self.get_position(symbol)['currentQty']
 
     def get_instrument(self, symbol=None):
-        logger.info("[ExchangeInterface][get_instrument]")
+        #logger.info("[ExchangeInterface][get_instrument]")
 
         if symbol is None:
             symbol = self.symbol
@@ -153,7 +153,7 @@ class ExchangeInterface:
     def get_tradeBin1m(self):
         update_required = False
 
-        logger.info("[ExchangeInterface][get_tradeBin1m]")
+        #logger.info("[ExchangeInterface][get_tradeBin1m]")
         bin1m = self.bitmex.tradeBin1m()
 
         #ts = []
@@ -173,7 +173,7 @@ class ExchangeInterface:
             'turnover' : [bin1m['turnover']],
             'homeNotional' : [bin1m['homeNotional']],
             'foreignNotional' : [bin1m['foreignNotional']]},
-            index=pd.to_datetime([bin1m['timestamp'] for i in range(0, len(bin1m))]))
+            index=pd.to_datetime([bin1m['timestamp']]))
 
 
         df["open"] = df["open"].astype(float)
@@ -187,7 +187,7 @@ class ExchangeInterface:
         df["homeNotional"] = df["homeNotional"].astype(float)
         df["foreignNotional"] = df["foreignNotional"].astype(float)
 
-        update_required = ohlc_data._getInstance().appendData(df)
+        update_required = singleton_data.getInstance().appendOHLC_data(df)
 
         return update_required
 
@@ -224,7 +224,7 @@ class ExchangeInterface:
         return lowest_sell if lowest_sell else {'price': 2**32}  # ought to be enough for anyone
 
     def get_position(self, symbol=None):
-        logger.info("[ExchangeInterface][get_position]")
+        #logger.info("[ExchangeInterface][get_position]")
 
         if symbol is None:
             symbol = self.symbol
@@ -238,7 +238,7 @@ class ExchangeInterface:
         return self.bitmex.ticker_data(symbol)
 
     def is_open(self):
-        logger.info("[ExchangeInterface][is_open]")
+        #logger.info("[ExchangeInterface][is_open]")
 
         """Check that websockets are still open."""
         return not self.bitmex.ws.exited
@@ -318,14 +318,6 @@ class OrderManager():
 
         bin1m = self.exchange.minutes_of_new_data(60)
 
-        #df = pd.DataFrame(bin1m, columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'trades', 'volume', 'vwap', 'lastSize', 'turnover', 'homeNotional', 'foreignNotional'])
-        #logger.info("[OrderManager][setInitOHLC] df.to_string() " + df.to_string())
-
-        #convert TrieDateField time to
-        #ts = []
-        #for i in range(0, len(bin1m)):
-        #    ts.append(common_util.coonvertDateFormat(bin1m[i]['timestamp']))
-
         df = pd.DataFrame({
             'timestamp' : [bin1m[i]['timestamp'] for i in range(0, len(bin1m))],
             'symbol' : [bin1m[i]['symbol'] for i in range(0, len(bin1m))],
@@ -341,7 +333,6 @@ class OrderManager():
             'homeNotional' : [bin1m[i]['homeNotional'] for i in range(0, len(bin1m))],
             'foreignNotional' : [bin1m[i]['foreignNotional'] for i in range(0, len(bin1m))]},
             index=pd.to_datetime([bin1m[i]['timestamp'] for i in range(0, len(bin1m))]))
-            #index=pd.to_datetime([ts[i] for i in range(0, len(bin1m))]))
 
         df["open"] = df["open"].astype(float)
         df["high"] = df["high"].astype(float)
@@ -354,8 +345,7 @@ class OrderManager():
         df["homeNotional"] = df["homeNotional"].astype(float)
         df["foreignNotional"] = df["foreignNotional"].astype(float)
 
-
-        ohlc_data.instance().setData(df)
+        singleton_data.instance().setOHLC_data(df)
 
     def reset(self):
         logger.info("[OrderManager][reset]")
@@ -500,6 +490,7 @@ class OrderManager():
         buys_matched = 0
         sells_matched = 0
         existing_orders = self.exchange.get_orders()
+        ret = []
 
         # Check all existing orders and match them up with what we want to place.
         # If there's an open one, we might be able to amend it to fit what we want.
@@ -560,15 +551,15 @@ class OrderManager():
             logger.info("Creating %d orders:" % (len(to_create)))
             for order in reversed(to_create):
                 logger.info("%4s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
-            self.exchange.create_bulk_orders(to_create)
+            ret = self.exchange.create_bulk_orders(to_create)
 
         # Could happen if we exceed a delta limit
         if len(to_cancel) > 0:
             logger.info("Canceling %d orders:" % (len(to_cancel)))
             for order in reversed(to_cancel):
                 logger.info("%4s %d @ %.*f" % (order['side'], order['leavesQty'], tickLog, order['price']))
-            self.exchange.cancel_bulk_orders(to_cancel)
-
+            ret = self.exchange.cancel_bulk_orders(to_cancel)
+        return ret
     ###
     # Position Limits
     ###
@@ -633,7 +624,7 @@ class OrderManager():
     ###
 
     def check_file_change(self):
-        logger.info("[OrderManager][check_file_change]")
+        #logger.info("[OrderManager][check_file_change]")
 
         """Restart if any files we're watching have changed."""
         for f, mtime in watched_files_mtimes:
