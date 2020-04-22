@@ -121,6 +121,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
                 if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun() :
                     th = SellThread(self)
+                    th.daemon=True
                     th.start()
                 # even if wait for buying after ordering, it would be no quentity.
                 # swtich to buying mode

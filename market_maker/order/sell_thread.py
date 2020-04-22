@@ -152,7 +152,10 @@ class SellThread(threading.Thread):
             sleep(1)
 
         singleton_data.getInstance().setSellThread(False)
-
-
+    '''
+    def stop(self):
+        logger.info("[SellThread][run] stop()")
+        self._stop_event.set()
+    '''
 
 
