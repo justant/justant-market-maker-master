@@ -70,7 +70,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
         # move to setting
 
-        default_Qty = 10
+        default_Qty = 80
         orders = self.exchange.get_orders()
         #logger.info("[CustomOrderManager] before buying orders : " + str(orders))
         logger.info("[strategy] len(orders) : " + str(len(orders)))
@@ -158,6 +158,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
             update_required = self.exchange.get_tradeBin1m();
 
             if update_required:
+                logger.info("----------------------------------------------------------------------------")
                 logger.info("[CustomOrderManager][run_loop] update_required : " + str(update_required))
 
                 if PLOT_RUNNING:

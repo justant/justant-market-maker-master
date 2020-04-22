@@ -19,7 +19,7 @@ class SellThread(threading.Thread):
         singleton_data.getInstance().setSellThread(True)
 
         # move to setting value
-        self.averagingDownSize = 100.0
+        self.averagingDownSize = 50.0
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
@@ -57,16 +57,23 @@ class SellThread(threading.Thread):
                     self.custom_strategy.exchange.cancel_all_orders()
 
                     # if it couldn't oder, retry it
+                    self.cancel_retryCnt = 0
                     self.ret = []
                     while len(self.ret) == 0:
                         current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                         sell_orders = []
-                        sell_orders.append({'price': current_price, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+
+                        if(self.cancel_retryCnt < 10):
+                            sell_orders.append({'price': current_price, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+                        else :
+                            sell_orders.append({'price': current_price + 0.5, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+
                         logger.info("[SellThread][run] sell order current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
                         self.ret = self.custom_strategy.converge_orders([], sell_orders)
 
                         if len(self.ret) == 1:
                             if self.ret[0]['ordStatus'] == 'Canceled':
+                                self.cancel_retryCnt += 1
                                 logger.info("[SellThread][run] order Status == Canceled")
                                 logger.info("[SellThread][run] reason : " + str(self.ret[0]['text']))
                                 logger.info("[SellThread][run] sell order retry")
@@ -97,7 +104,7 @@ class SellThread(threading.Thread):
                     if len(orders) == 0:
                         # selling complete
                         logger.info("[SellThread][run] selling complete, len(orders) == 0")
-                        logger.info("[SellThread][run] ###### price : " + str(current_price) + ", quantity : " + str(currentQty) + " ######")
+                        logger.info("[SellThread][run] ###### price : " + str(current_price) + ",avgCostPrice, : + " + str(avgCostPrice) + ",quantity : " + str(currentQty) + " ######")
                         singleton_data.getInstance().setAllowBuy(True)
                         break
                     else :

@@ -632,7 +632,7 @@ class OrderManager():
                 self.restart()
 
     def check_connection(self):
-        logger.info("[OrderManager][check_connection]")
+        #logger.info("[OrderManager][check_connection]")
 
         """Ensure the WS connections are still open."""
         return self.exchange.is_open()
