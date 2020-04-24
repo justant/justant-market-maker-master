@@ -5,7 +5,6 @@ import threading
 from time import sleep
 
 import settings
-from market_maker.market_maker import ExchangeInterface
 from market_maker.utils.singleton import singleton_data
 
 logger = logging.getLogger('root')
@@ -18,8 +17,10 @@ class SellThread(threading.Thread):
         singleton_data.getInstance().setAllowBuy(False)
         singleton_data.getInstance().setSellThread(True)
 
-        # move to setting value
-        self.averagingDownSize = 50.0
+        # 50.0
+        self.averagingDownSize = settings.AVERAGING_DOWN_SIZE
+        # 10.0
+        self.minSellingGap = settings.MIN_SELLING_GAP
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
@@ -37,7 +38,6 @@ class SellThread(threading.Thread):
 
     def run(self):
         logger.info("[SellThread][run]")
-        #logger.info("[SellThread][run] rsi over 70.0 & stock_k over 70.0")
 
         wait_cnt = 0
         while not singleton_data.getInstance().getAllowBuy():
@@ -47,12 +47,12 @@ class SellThread(threading.Thread):
                 position = self.custom_strategy.exchange.get_position()
                 avgCostPrice = position['avgCostPrice']
                 currentQty = position['currentQty']
+                logger.info("[SellThread][run] current_price > avgCostPrice + " + str(self.minSellingGap))
+                logger.info("[SellThread][run] current_price : " + str(current_price))
+                logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
+                logger.info("[SellThread][run] currentQty : " + str(currentQty))
 
-                if current_price > avgCostPrice:
-                    logger.info("[SellThread][run] current_price > avgCostPrice")
-                    logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
-                    logger.info("[SellThread][run] currentQty : " + str(currentQty))
-
+                if current_price > avgCostPrice + self.minSellingGap:
                     # 주문 모두삭제 & 새로 추가 가 아니라 주문 수정으로 바꿔줄 필요가 있다
                     self.custom_strategy.exchange.cancel_all_orders()
 
@@ -104,7 +104,7 @@ class SellThread(threading.Thread):
                     if len(orders) == 0:
                         # selling complete
                         logger.info("[SellThread][run] selling complete, len(orders) == 0")
-                        logger.info("[SellThread][run] ###### price : " + str(current_price) + ",avgCostPrice, : + " + str(avgCostPrice) + ",quantity : " + str(currentQty) + " ######")
+                        logger.info("[SellThread][run] ###### price : " + str(current_price) + ", avgCostPrice, : + " + str(avgCostPrice) + ", quantity : " + str(currentQty) + " ######")
                         singleton_data.getInstance().setAllowBuy(True)
                         break
                     else :
@@ -112,17 +112,31 @@ class SellThread(threading.Thread):
                         self.custom_strategy.exchange.cancel_all_orders()
                         logger.info("[SellThread][run] not selling after monitoring 10 seconds, cancel order ")
 
-
                 wait_cnt += 1
                 # 1) current price is more than average prive + 100$
                 # 2) after 2mins
-                # break
+
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                 position = self.custom_strategy.exchange.get_position()
                 avgCostPrice = position['avgCostPrice']
 
+                # Additional buying #
+                # even though buying in not allow,
+                # ave_price largger that cur_price + averagingDownSize(default : 100$), making ave_down
+                #logger.info("[SellThread][run] current_price + averagingDownSize < avgCostPrice : " + str(float(current_price) + float(self.averagingDownSize) < float(avgCostPrice)))
+                if float(current_price) + float(self.averagingDownSize) < float(avgCostPrice):
 
-                if wait_cnt > 120:
+                    logger.info("[SellThread][run] ### Additional buying ###")
+                    logger.info("[SellThread][run] current_price + averagingDownSize("+str(self.averagingDownSize)+") > avgCostPrice")
+                    logger.info("[SellThread][run] current_price : " + str(current_price))
+                    logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
+
+                    self.custom_strategy.exchange.cancel_all_orders()
+                    singleton_data.getInstance().setAllowBuy(True)
+
+                    break
+
+                elif wait_cnt > settings.SELLING_WAIT:
                     logger.info("[SellThread][run] stop selling thread because cnt > 120")
                     logger.info("[SellThread][run] wait_cnt : " + str(wait_cnt))
                     logger.info("[SellThread][run] current_price : " + str(current_price))
@@ -131,19 +145,6 @@ class SellThread(threading.Thread):
 
                     break
 
-                # Additional buying #
-                # even though buying in not allow,
-                # ave_price largger that cur_price + averagingDownSize(default : 100$), making ave_down
-                elif float(current_price) > float(avgCostPrice) + self.averagingDownSize:
-
-                    logger.info("[SellThread][run] ### Additional buying ###")
-                    logger.info("[SellThread][run] current_price > avgCostPrice + averagingDownSize("+str(self.averagingDownSize)+")")
-                    logger.info("[SellThread][run] current_price : " + str(current_price))
-                    logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
-
-                    singleton_data.getInstance().setAllowBuy(True)
-
-                    break
             except Exception as ex:
                 self.PrintException()
                 break

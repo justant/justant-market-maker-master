@@ -19,7 +19,7 @@ LOOP_INTERVAL = 1
 logger = logging.getLogger('root')
 bitmex_plot = bitmex_plot()
 
-PLOT_RUNNING = False
+PLOT_RUNNING = settings.PLOT_RUNNING
 
 class CustomOrderManager(OrderManager, threading.Thread):
     """A sample order manager for implementing your own custom strategy"""
@@ -40,17 +40,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
             singleton_data.getInstance().setAllowBuy(True)
             logger.info("[strategy] init setAllowBuy : True")
 
-    def place_orders(self) -> None:
-        # implement your custom strategy here
-
-        buy_orders = []
-        sell_orders = []
-
-        # populate buy and sell orders, e.g.
-        # buy_orders.append({'price': 999.0, 'orderQty': 100, 'side': "Buy"})
-        # sell_orders.append({'price': 1001.0, 'orderQty': 100, 'side': "Sell"})
-
-        self.converge_orders(buy_orders, sell_orders)
     def check_current_strategy(self):
         current_price = self.exchange.get_instrument()['lastPrice']
         position = self.exchange.get_position()
@@ -66,11 +55,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
         logger.info("[strategy] ['stoch_d'] " + str(self.analysis['stoch_d'].values[0]))
         logger.info("[strategy] rsi + stoch_d : " + str(self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0]))
         logger.info("[strategy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
-        #self.print_status()
 
-        # move to setting
-
-        default_Qty = 80
+        default_Qty = settings.DEFAULT_ORDER_SIZE
         orders = self.exchange.get_orders()
         #logger.info("[CustomOrderManager] before buying orders : " + str(orders))
         logger.info("[strategy] len(orders) : " + str(len(orders)))
@@ -78,8 +64,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
         ##### Buying Logic #####
         # rsi < 30.0 & stoch_d < 20.0
         if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
-            if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
-            #if True: # for test
+            #if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
+            if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
 
                 current_price = self.exchange.get_instrument()['lastPrice']
@@ -98,6 +84,16 @@ class CustomOrderManager(OrderManager, threading.Thread):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                 for i in range(51, 61):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                '''
+                for i in range(61, 71):
+                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                for i in range(71, 81):
+                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                for i in range(81, 91):
+                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                for i in range(91, 101):
+                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                '''
 
                 ret = self.converge_orders(buy_orders, [])
                 #logger.info("[strategy][buy] ret : " + str(ret))
@@ -119,10 +115,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 logger.info("[strategy][sell] currentQty : " + str(currentQty))
                 logger.info("[strategy][sell] isSellThreadRun() : " + str(singleton_data.getInstance().isSellThreadRun()))
 
-                if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun() :
+                if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun():
                     th = SellThread(self)
                     th.daemon=True
                     th.start()
+
                 # even if wait for buying after ordering, it would be no quentity.
                 # swtich to buying mode
                 elif currentQty == 0:
@@ -200,7 +197,5 @@ def setApi():
     key = list[0].split('=')[1]
     secret = list[1].split('=')[1]
 
-    #_settings_base.API_KEY = key
-    #_settings_base.API_SECRET = secret
     settings.API_KEY = key
     settings.API_SECRET = secret
