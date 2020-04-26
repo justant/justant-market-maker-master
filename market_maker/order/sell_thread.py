@@ -123,10 +123,10 @@ class SellThread(threading.Thread):
         singleton_data.getInstance().setSellThread(False)
 
     def make_sell_order(self):
-        logger.info("[SellThread][run] make_sell_order")
+        logger.info("[SellThread][make_sell_order] start")
 
         current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
-        avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
+        #avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
         currentQty = self.custom_strategy.exchange.get_currentQty()
 
         # if it couldn't oder, retry it
@@ -142,26 +142,25 @@ class SellThread(threading.Thread):
                 else :
                     sell_orders.append({'price': current_price + 0.5, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
 
-                logger.info("[SellThread][run] sell order current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
+                logger.info("[SellThread][make_sell_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
                 current_order = self.custom_strategy.converge_orders([], sell_orders)
 
-                # sell order의 갯수가 1개인지 확인하는 로직 필요
                 if len(current_order) == 1:
                     if current_order[0]['ordStatus'] == 'Canceled':
                         cancel_retryCnt += 1
-                        logger.info("[SellThread][run] order Status == Canceled")
-                        logger.info("[SellThread][run] reason : " + str(current_order[0]['text']))
-                        logger.info("[SellThread][run] sell order retry")
+                        logger.info("[SellThread][make_sell_order] order Status == Canceled")
+                        logger.info("[SellThread][make_sell_order] reason : " + str(current_order[0]['text']))
+                        logger.info("[SellThread][make_sell_order] sell order retry")
                         current_order = []
                     elif current_order[0]['ordStatus'] == 'New':
-                        logger.info("[SellThread][run] order Status == New")
+                        logger.info("[SellThread][make_sell_order] order Status == New")
                         break
                 else:
-                    logger.info("[SellThread][run] Abnormal Selling current_order length: " + str(len(current_order)))
-                    logger.info("[SellThread][run] Abnormal Selling current_order : " + str(current_order))
-                    logger.info("[SellThread][run] Abnormal Selling current_order cancel ")
+                    logger.info("[SellThread][make_sell_order] Abnormal Selling current_order length: " + str(len(current_order)))
+                    logger.info("[SellThread][make_sell_order] Abnormal Selling current_order : " + str(current_order))
+                    logger.info("[SellThread][make_sell_order] Abnormal Selling current_order cancel ")
                     self.custom_strategy.exchange.cancel_all_orders('All')
-                    logger.info("[SellThread][run] retry after Abnormal Selling order")
+                    logger.info("[SellThread][make_sell_order] retry after Abnormal Selling order")
                     current_order = []
 
         except Exception as ex:
@@ -173,17 +172,17 @@ class SellThread(threading.Thread):
         # monitoring and waiting until selling
         ret = False
         sleep(1)
-        logger.info("[SellThread][run] monitor_sell_order start")
+        logger.info("[SellThread][monitor_sell_order] start")
         orders = self.custom_strategy.exchange.get_orders('Sell')
-        logger.info("[SellThread][run] monitor_sell_order orders : " + str(orders))
+        logger.info("[SellThread][monitor_sell_order] orders : " + str(orders))
 
         for i in range(1, 11):
             orders = self.custom_strategy.exchange.get_orders()
 
             if len(orders) == 0:
                 # selling complete
-                logger.info("[SellThread][run] selling complete, len(orders) == 0")
-                logger.info("[SellThread][run] ######  profit : + " + str(expectedProfit) + "$  ######")
+                logger.info("[SellThread][monitor_sell_order] selling complete!")
+                logger.info("[SellThread][monitor_sell_order] ######  profit : + " + str(expectedProfit) + "$  ######")
                 self.custom_strategy.exchange.cancel_all_orders('All')
                 ret = True
 
