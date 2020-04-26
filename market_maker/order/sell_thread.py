@@ -21,6 +21,8 @@ class SellThread(threading.Thread):
         self.averagingDownSize = settings.AVERAGING_DOWN_SIZE
         # 10.0
         self.minSellingGap = settings.MIN_SELLING_GAP
+
+        self.current_order = []
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
@@ -54,12 +56,15 @@ class SellThread(threading.Thread):
 
                 if current_price > avgCostPrice + self.minSellingGap:
                     # 주문 모두삭제 & 새로 추가 가 아니라 주문 수정으로 바꿔줄 필요가 있다
+                    # sell order가 있는지 확인한다
+                    # but order는 모두 삭제한다
                     self.custom_strategy.exchange.cancel_all_orders()
+                    
 
                     # if it couldn't oder, retry it
                     self.cancel_retryCnt = 0
-                    self.ret = []
-                    while len(self.ret) == 0:
+                    self.current_order = []
+                    while len(self.current_order) == 0:
                         current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                         sell_orders = []
 
@@ -69,35 +74,36 @@ class SellThread(threading.Thread):
                             sell_orders.append({'price': current_price + 0.5, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
 
                         logger.info("[SellThread][run] sell order current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
-                        self.ret = self.custom_strategy.converge_orders([], sell_orders)
+                        self.current_order = self.custom_strategy.converge_orders([], sell_orders)
 
-                        if len(self.ret) == 1:
-                            if self.ret[0]['ordStatus'] == 'Canceled':
+                        # sell order의 갯수가 1개인지 확인하는 로직 필요
+                        if len(self.current_order) == 1:
+                            if self.current_order[0]['ordStatus'] == 'Canceled':
                                 self.cancel_retryCnt += 1
                                 logger.info("[SellThread][run] order Status == Canceled")
-                                logger.info("[SellThread][run] reason : " + str(self.ret[0]['text']))
+                                logger.info("[SellThread][run] reason : " + str(self.current_order[0]['text']))
                                 logger.info("[SellThread][run] sell order retry")
-                                self.ret = []
-                            elif self.ret[0]['ordStatus'] == 'New':
+                                self.current_order = []
+                            elif self.current_order[0]['ordStatus'] == 'New':
                                 logger.info("[SellThread][run] order Status == New")
                                 break
                         else:
-                            logger.info("[SellThread][run] Abnormal Selling order length: " + str(len(self.ret)))
-                            logger.info("[SellThread][run] Abnormal Selling order : " + str(self.ret))
-                            logger.info("[SellThread][run] Abnormal Selling order cancel ")
+                            logger.info("[SellThread][run] Abnormal Selling current_order length: " + str(len(self.current_order)))
+                            logger.info("[SellThread][run] Abnormal Selling current_order : " + str(self.current_order))
+                            logger.info("[SellThread][run] Abnormal Selling current_order cancel ")
                             self.custom_strategy.exchange.cancel_all_orders()
                             logger.info("[SellThread][run] retry after Abnormal Selling order")
-                            self.ret = []
+                            self.current_order = []
 
                         sleep(0.1)
 
                     # monitoring and waiting until selling
                     # flee away 3$ form first oder_price, amend order
-                    #order_price = float(self.ret[0]['price'])
+                    #order_price = float(self.current_order[0]['price'])
                     #current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
 
-                    logger.info("[SellThread][run] waiting 20 secs")
-                    sleep(20)
+                    logger.info("[SellThread][run] waiting 40 secs")
+                    sleep(40)
                     orders = self.custom_strategy.exchange.get_orders()
                     logger.info("[SellThread][run] start monitoring orders : " + str(orders))
 

@@ -32,6 +32,10 @@ class BitMEXWebsocket():
 
     def __init__(self):
         self.logger = logging.getLogger('root')
+
+        setup_custom_logger('execution', log_level=settings.LOG_LEVEL)
+        self.exe_logger = logging.getLogger('execution')
+
         self.__reset()
 
     def __del__(self):
@@ -172,7 +176,7 @@ class BitMEXWebsocket():
         header=self.__get_auth()
         )
 
-        setup_custom_logger('websocket', log_level=settings.LOG_LEVEL)
+        #setup_custom_logger('websocket', log_level=settings.LOG_LEVEL)
         self.wst = threading.Thread(target=lambda: self.ws.run_forever(sslopt=sslopt_ca_certs))
         self.wst.daemon = True
         self.wst.start()
@@ -285,6 +289,10 @@ class BitMEXWebsocket():
                                     self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
                                              (item['side'], contExecuted, item['symbol'],
                                               instrument['tickLog'], item['price']))
+
+                                    self.exe_logger.info("Execution: %s %d Contracts of %s at %.*f" %
+                                                     (item['side'], contExecuted, item['symbol'],
+                                                      instrument['tickLog'], item['price']))
 
                         # Update this item.
                         item.update(updateData)

@@ -64,8 +64,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
         ##### Buying Logic #####
         # rsi < 30.0 & stoch_d < 20.0
         if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
-            #if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
-            if True: # for test
+            if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
+            #if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
 
                 current_price = self.exchange.get_instrument()['lastPrice']
@@ -94,7 +94,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 for i in range(91, 101):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                 '''
-
                 ret = self.converge_orders(buy_orders, [])
                 #logger.info("[strategy][buy] ret : " + str(ret))
                 logger.info("[strategy][buy] order length : " + str(len(ret)))
