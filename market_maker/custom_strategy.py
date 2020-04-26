@@ -33,18 +33,21 @@ class CustomOrderManager(OrderManager, threading.Thread):
         position = self.exchange.get_position()
         currentQty = position['currentQty']
 
-        if currentQty > 0:
-            singleton_data.getInstance().setAllowBuy(False)
-            logger.info("[strategy] init setAllowBuy : False")
+        # False condtion is for Testing
+        if(True):
+            if currentQty > 0:
+                singleton_data.getInstance().setAllowBuy(False)
+                logger.info("[strategy] init setAllowBuy : False")
+            else :
+                singleton_data.getInstance().setAllowBuy(True)
+                logger.info("[strategy] init setAllowBuy : True")
         else :
             singleton_data.getInstance().setAllowBuy(True)
-            logger.info("[strategy] init setAllowBuy : True")
 
     def check_current_strategy(self):
         current_price = self.exchange.get_instrument()['lastPrice']
-        position = self.exchange.get_position()
-        avgCostPrice = position['avgCostPrice']
-        currentQty = position['currentQty']
+        avgCostPrice = self.exchange.get_avgCostPrice()
+        currentQty = self.exchange.get_currentQty()
 
         logger.info("[strategy] current_price(1) : " + str(current_price))
         logger.info("[strategy] avgCostPrice : " + str(avgCostPrice))
@@ -68,7 +71,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
             #if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
 
-                current_price = self.exchange.get_instrument()['lastPrice']
+                current_price = self.exchange.get_instrument()['lastPrice'] - 10
                 logger.info("[strategy][buy] current_price(2) : " + str(current_price))
                 buy_orders = []
 
@@ -114,18 +117,20 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 logger.info("[strategy][sell] currentQty : " + str(currentQty))
                 logger.info("[strategy][sell] isSellThreadRun() : " + str(singleton_data.getInstance().isSellThreadRun()))
 
+                #test
+                #if(not singleton_data.getInstance().isSellThreadRun()):
                 if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun():
-                    th = SellThread(self)
-                    th.daemon=True
-                    th.start()
+                    sell_th = SellThread(self)
+                    sell_th.daemon=True
+                    sell_th.start()
 
                 # even if wait for buying after ordering, it would be no quentity.
                 # swtich to buying mode
                 elif currentQty == 0:
                     logger.info("[strategy][sell] currentQty == 0 ")
                     logger.info("[strategy][sell] ### switch mode from selling to buying ###")
-                    logger.info("[strategy]0[sell] cancel all buying order")
-                    self.exchange.cancel_all_orders()
+                    logger.info("[strategy][sell] cancel all buying order")
+                    self.exchange.cancel_all_orders('All')
                     singleton_data.getInstance().setAllowBuy(True)
 
     def run_loop(self):

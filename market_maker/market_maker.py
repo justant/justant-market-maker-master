@@ -56,24 +56,29 @@ class ExchangeInterface:
             else:
                 break
 
-    def cancel_all_orders(self):
+    def cancel_all_orders(self, filter='All'):
+        # filter : All, Sell, Buy
+
         logger.info("[ExchangeInterface][cancel_all_orders]")
 
         if self.dry_run:
             return
 
-        logger.info("Resetting current position. Canceling all existing orders.")
+        logger.info("Resetting current position. Canceling all existing orders, filter : " + str(filter))
         tickLog = self.get_instrument()['tickLog']
 
         # In certain cases, a WS update might not make it through before we call this.
         # For that reason, we grab via HTTP to ensure we grab them all.
         orders = self.bitmex.http_open_orders()
+        filteredOrders = []
 
         for order in orders:
-            logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
+            if filter == 'All' or order['side'] == filter:
+                filteredOrders.append(order)
+                logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
 
-        if len(orders):
-            self.bitmex.cancel([order['orderID'] for order in orders])
+        if len(filteredOrders):
+            self.bitmex.cancel([order['orderID'] for order in filteredOrders])
 
         sleep(settings.API_REST_INTERVAL)
 
@@ -198,12 +203,22 @@ class ExchangeInterface:
             return {'marginBalance': float(settings.DRY_BTC), 'availableFunds': float(settings.DRY_BTC)}
         return self.bitmex.funds()
 
-    def get_orders(self):
+    def get_orders(self, filter='All'):
+        # filter : All, Sell, Buy
+
         logger.info("[ExchangeInterface][get_orders]")
 
         if self.dry_run:
             return []
-        return self.bitmex.open_orders()
+
+        orders = self.bitmex.open_orders()
+        filteredOrders = []
+
+        for order in orders:
+            if filter == 'All' or order['side'] == filter:
+                filteredOrders.append(order)
+
+        return filteredOrders
 
     def get_highest_buy(self):
         logger.info("[ExchangeInterface][get_highest_buy]")
@@ -229,6 +244,20 @@ class ExchangeInterface:
         if symbol is None:
             symbol = self.symbol
         return self.bitmex.position(symbol)
+
+    def get_avgCostPrice(self, symbol=None):
+        #logger.info("[ExchangeInterface][get_avgCostPrice]")
+
+        if symbol is None:
+            symbol = self.symbol
+        return self.bitmex.position(symbol)['avgCostPrice']
+
+    def get_currentQty(self, symbol=None):
+        #logger.info("[ExchangeInterface][get_currentQty]")
+
+        if symbol is None:
+            symbol = self.symbol
+        return self.bitmex.position(symbol)['currentQty']
 
     def get_ticker(self, symbol=None):
         logger.info("[ExchangeInterface][get_ticker]")

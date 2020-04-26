@@ -20,6 +20,7 @@ class singleton_data:
         self.ohld_data = pd.DataFrame
         self.allow_buy = True
         self.is_sell_thread_run = False
+        self.is_buy_thread_run = False
 
     def setOHLC_data(self, newData):
         self.ohld_data = newData
@@ -58,3 +59,9 @@ class singleton_data:
 
     def setSellThread(self, value):
         self.is_sell_thread_run = value
+
+    def isBuyThreadRun(self):
+        return self.is_buy_thread_run
+
+    def setBuyThread(self, value):
+        self.is_buy_thread_run = value
