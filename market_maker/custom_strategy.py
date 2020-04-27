@@ -53,10 +53,10 @@ class CustomOrderManager(OrderManager, threading.Thread):
         logger.info("[strategy] avgCostPrice : " + str(avgCostPrice))
         logger.info("[strategy] currentQty : " + str(currentQty))
 
-        logger.info("[strategy] ['rsi'] " + str(self.analysis['rsi'].values[0]))
+        logger.info("[strategy] ['rsi'] " + str(self.analysis['rsi'].values[0])[:5])
         #logger.info("[strategy] ['stoch_k'] " + str(self.analysis['stoch_k'].values[0]))
-        logger.info("[strategy] ['stoch_d'] " + str(self.analysis['stoch_d'].values[0]))
-        logger.info("[strategy] rsi + stoch_d : " + str(self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0]))
+        logger.info("[strategy] ['stoch_d'] " + str(self.analysis['stoch_d'].values[0])[:5])
+        logger.info("[strategy] rsi + stoch_d : " + str(self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0])[:5])
         logger.info("[strategy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
 
         default_Qty = settings.DEFAULT_ORDER_SIZE
@@ -71,7 +71,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
             #if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
 
-                current_price = self.exchange.get_instrument()['lastPrice'] - 10
+                current_price = self.exchange.get_instrument()['lastPrice']
                 logger.info("[strategy][buy] current_price(2) : " + str(current_price))
                 buy_orders = []
 
@@ -87,11 +87,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                 for i in range(51, 61):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                '''
                 for i in range(61, 71):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                 for i in range(71, 81):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+                '''
                 for i in range(81, 91):
                     buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                 for i in range(91, 101):
@@ -154,9 +154,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
             #self.print_status()  # Print skew, delta, etc
             #self.place_orders()  # Creates desired orders and converges to existing orders
 
-            #contents = self.exchange.get_instrument()['lastPrice']
-            #logger.info("[CustomOrderManager][run_loop] test_instrument(lastPrice) : " + str(contents))
-
             update_required = self.exchange.get_tradeBin1m();
 
             if update_required:
@@ -187,19 +184,3 @@ def run() -> None:
     except (KeyboardInterrupt, SystemExit):
         order_manager.stop()
         sys.exit()
-
-# getApiKey
-def setApi():
-    script_dir = pathlib.Path(__file__).parent.parent
-    #script_dir = os.path.dirname(__file__).parent().parent() #<-- absolute dir the script is in
-
-    rel_path = "client_api\key_secret.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    r = open(abs_file_path, mode='rt', encoding='utf-8')
-    list = r.read().splitlines()
-    key = list[0].split('=')[1]
-    secret = list[1].split('=')[1]
-
-    settings.API_KEY = key
-    settings.API_SECRET = secret

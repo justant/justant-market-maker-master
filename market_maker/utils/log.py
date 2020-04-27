@@ -23,13 +23,18 @@ def setup_custom_logger(name, log_level=settings.LOG_LEVEL):
         apiKey = settings.API_KEY[:4]
         script_dir = pathlib.Path(__file__).parent.parent.parent
         rel_path = './log/' + apiKey
-        if name == 'execution':
-            rel_path += '/' + name
-        abs_file_path = os.path.join(script_dir, rel_path)
 
+        fileHandler = None
+        rel_path += '/' + name
+        abs_file_path = os.path.join(script_dir, rel_path)
         os.makedirs(abs_file_path, exist_ok = True)
 
-        fileHandler = logging.FileHandler(abs_file_path + '/' + timestr + '.log')
+        if name == 'execution':
+            fileHandler = logging.FileHandler(abs_file_path + '/order.log')
+        elif name == 'exception':
+            fileHandler = logging.FileHandler(abs_file_path + '/exception.log')
+        else :
+            fileHandler = logging.FileHandler(abs_file_path + '/' + timestr + '.log')
 
         streamHandler.setFormatter(formatter)
         fileHandler.setFormatter(formatter)

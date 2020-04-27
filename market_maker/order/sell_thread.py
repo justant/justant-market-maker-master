@@ -8,6 +8,7 @@ import settings
 from market_maker.utils.singleton import singleton_data
 
 logger = logging.getLogger('root')
+exe_logger = logging.getLogger('exception')
 
 class SellThread(threading.Thread):
     def __init__(self, custom_strategy):
@@ -33,6 +34,7 @@ class SellThread(threading.Thread):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, f.f_globals)
         logger.info("[SellThread][run] " + str('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)))
+        exe_logger.info("[SellThread][run] " + str('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)))
 
     #def retry_sell(self):
     #def ammend_sell(self):
@@ -41,8 +43,9 @@ class SellThread(threading.Thread):
         logger.info("[SellThread][run]")
         # Cancel all sell orders
         self.custom_strategy.exchange.cancel_all_orders('Sell')
-
+        self.waiting_sell_order = []
         wait_cnt = 0
+
         while not singleton_data.getInstance().getAllowBuy():
             try:
                 # realized profit
@@ -54,37 +57,38 @@ class SellThread(threading.Thread):
                 logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
                 logger.info("[SellThread][run] currentQty : " + str(currentQty))
 
+                #check selling order
+                if len(self.waiting_sell_order) > 0:
+                    expectedProfit = (current_price - avgCostPrice) * currentQty
+                    if self.check_sell_order(expectedProfit):
+                        singleton_data.getInstance().setAllowBuy(True)
+                        break
+                else :
+                    logger.info("[SellThread][run] len(waiting_sell_order) : " + str(len(self.waiting_sell_order)))
+
                 # selling condition
-                if current_price > avgCostPrice + self.minSellingGap:
+                if float(current_price) > float(avgCostPrice) + float(self.minSellingGap):
                     logger.info("[SellThread][run] current_price > avgCostPrice + " + str(self.minSellingGap))
 
                     sell_order = self.custom_strategy.exchange.get_orders('Sell')
-                    new_sell_order = []
+
                     if len(sell_order) > 0:
 
-                        if current_price + 3 > sell_order['price']:
+                        if float(current_price) + 3.0 > float(sell_order['price']):
                             # flee away 3$ form first oder_price, amend order
                             # reorder
                             self.custom_strategy.exchange.cancel_all_orders('Sell')
-                            new_sell_order = self.make_sell_order()
+                            self.waiting_sell_order = self.make_sell_order()
+                            logger.info("[SellThread][run] AMEND : waiting_sell_order : " + str(self.waiting_sell_order))
                         else :
                             logger.info("[SellThread][run] The price you ordered has not dropped by more than $ 3 from the current price.")
                             logger.info("[SellThread][run] wait more")
                     elif len(sell_order) == 0:
-                        new_sell_order = self.make_sell_order()
-
-                    logger.info("[SellThread][run] new_sell_order : " + str(new_sell_order))
-                    if len(new_sell_order) > 0:
-                        expectedProfit = (current_price - avgCostPrice) * currentQty
-                        if self.monitor_sell_order(new_sell_order, expectedProfit):
-                            singleton_data.getInstance().setAllowBuy(True)
-
-                            break
-                    else :
-                        logger.info("[SellThread][run] make_sell_order() fail")
+                        self.waiting_sell_order = self.make_sell_order()
+                        logger.info("[SellThread][run] NEW : waiting_sell_order : " + str(self.waiting_sell_order))
 
                 # waiting (default:120) secs condition
-                elif current_price > avgCostPrice:
+                elif float(current_price) > float(avgCostPrice):
                     wait_cnt += 1
 
                     if wait_cnt > settings.SELLING_WAIT:
@@ -109,10 +113,15 @@ class SellThread(threading.Thread):
                         logger.info("[SellThread][run] current_price : " + str(current_price))
                         logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
 
-                        self.custom_strategy.exchange.cancel_all_orders('Sell')
+                        self.custom_strategy.exchange.cancel_all_orders('All')
                         singleton_data.getInstance().setAllowBuy(True)
 
+                    else :
+                        logger.info("[SellThread][run] Not yet additional buying")
+
                     break
+
+                sleep(1)
             except Exception as ex:
                 self.PrintException()
                 break
@@ -168,27 +177,23 @@ class SellThread(threading.Thread):
 
         return current_order
 
-    def monitor_sell_order(self, new_sell_order, expectedProfit):
-        # monitoring and waiting until selling
+    def check_sell_order(self, expectedProfit):
+        # checking whether or not it's sold
         ret = False
-        sleep(1)
-        logger.info("[SellThread][monitor_sell_order] start")
+
         orders = self.custom_strategy.exchange.get_orders('Sell')
-        logger.info("[SellThread][monitor_sell_order] orders : " + str(orders))
+        logger.info("[SellThread][check_sell_order] orders : " + str(orders))
 
-        for i in range(1, 11):
-            orders = self.custom_strategy.exchange.get_orders()
+        if len(orders) == 0:
+            # selling complete
+            logger.info("[SellThread][check_sell_order] selling complete!")
+            logger.info("[SellThread][check_sell_order] ######  profit : + " + str(expectedProfit) + "$  ######")
+            self.custom_strategy.exchange.cancel_all_orders('All')
+            ret = True
+            self.waiting_sell_order = []
 
-            if len(orders) == 0:
-                # selling complete
-                logger.info("[SellThread][monitor_sell_order] selling complete!")
-                logger.info("[SellThread][monitor_sell_order] ######  profit : + " + str(expectedProfit) + "$  ######")
-                self.custom_strategy.exchange.cancel_all_orders('All')
-                ret = True
-
-                break
-
-            sleep(1)
+        else :
+            logger.info("[SellThread][check_sell_order] not yet selling")
 
         return ret
 

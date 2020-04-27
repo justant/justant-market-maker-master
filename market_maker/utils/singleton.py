@@ -2,6 +2,7 @@ import pandas as pd
 from market_maker.utils import log
 
 logger = log.setup_custom_logger('root')
+log.setup_custom_logger('exception')
 
 class singleton_data:
     _instance = None
