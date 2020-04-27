@@ -2,7 +2,6 @@ import os
 import pathlib
 import sys
 from time import sleep
-import logging
 import pandas as pd
 
 #from market_maker import _settings_base
@@ -14,10 +13,12 @@ from market_maker.market_maker import OrderManager
 from market_maker.settings import settings
 import threading
 from market_maker.utils.singleton import singleton_data
+from market_maker.utils import log
 
 LOOP_INTERVAL = 1
 
-logger = logging.getLogger('root')
+logger = log.setup_custom_logger('root')
+
 bitmex_plot = bitmex_plot()
 
 PLOT_RUNNING = settings.PLOT_RUNNING
@@ -125,7 +126,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
             if update_required:
                 logger.info("----------------------------------------------------------------------------")
-                logger.info("[CustomOrderManager][run_loop] update_required : " + str(update_required))
+                #logger.info("[CustomOrderManager][run_loop] update_required : " + str(update_required))
 
                 if PLOT_RUNNING:
                     self.analysis = bitmex_plot.plot_update()

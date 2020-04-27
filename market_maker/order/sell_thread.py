@@ -1,14 +1,14 @@
 import linecache
-import logging
 import sys
 import threading
 from time import sleep
 
 import settings
 from market_maker.utils.singleton import singleton_data
+from market_maker.utils import log
 
-logger = logging.getLogger('root')
-exe_logger = logging.getLogger('exception')
+logger = log.setup_custom_logger('root')
+exe_logger = log.setup_custom_logger('exception')
 
 class SellThread(threading.Thread):
     def __init__(self, custom_strategy):
@@ -20,9 +20,19 @@ class SellThread(threading.Thread):
 
         # 50.0
         self.averagingDownSize = settings.AVERAGING_DOWN_SIZE
-        # 10.0
-        self.minSellingGap = settings.MIN_SELLING_GAP
 
+        # default(20.0) * (current_quantity / max_order_quantity)
+        # The maximum value is the default even if the quantity you have now is greater than max_order.
+        # MAX = default(20.0)
+        # The more net_buying orders, the higher the price.
+        currentQty = self.custom_strategy.exchange.get_currentQty()
+        logger.info("[SellThread][run] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
+        if currentQty > settings.MAX_ORDER_QUENTITY:
+            self.minSellingGap = settings.MIN_SELLING_GAP
+        else :
+            self.minSellingGap = float(settings.MIN_SELLING_GAP) * float(currentQty / settings.MAX_ORDER_QUENTITY)
+
+        logger.info("[SellThread][run] minSellingGap : " + str(self.minSellingGap))
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
@@ -53,9 +63,7 @@ class SellThread(threading.Thread):
                 avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
                 currentQty = self.custom_strategy.exchange.get_currentQty()
 
-                logger.info("[SellThread][run] current_price : " + str(current_price))
-                logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
-                logger.info("[SellThread][run] currentQty : " + str(currentQty))
+                logger.info("[SellThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
 
                 #check selling order
                 if len(self.waiting_sell_order) > 0:
@@ -72,9 +80,8 @@ class SellThread(threading.Thread):
 
                     sell_order = self.custom_strategy.exchange.get_orders('Sell')
 
-                    if len(sell_order) > 0:
-
-                        if float(current_price) + 3.0 > float(sell_order['price']):
+                    if len(sell_order) == 1:
+                        if float(current_price) + 3.0 > float(sell_order[0]['price']):
                             # flee away 3$ form first oder_price, amend order
                             # reorder
                             self.custom_strategy.exchange.cancel_all_orders('Sell')
@@ -82,10 +89,13 @@ class SellThread(threading.Thread):
                             logger.info("[SellThread][run] AMEND : waiting_sell_order : " + str(self.waiting_sell_order))
                         else :
                             logger.info("[SellThread][run] The price you ordered has not dropped by more than $ 3 from the current price.")
-                            logger.info("[SellThread][run] wait more")
                     elif len(sell_order) == 0:
                         self.waiting_sell_order = self.make_sell_order()
                         logger.info("[SellThread][run] NEW : waiting_sell_order : " + str(self.waiting_sell_order))
+
+                    elif len(sell_order) > 0:
+                        logger.info("[SellThread][run] Abnormal len(sell_order): " + str(len(sell_order)))
+                        logger.info("[SellThread][run] Abnormal sell_order: " + str(sell_order))
 
                 # waiting (default:120) secs condition
                 elif float(current_price) > float(avgCostPrice):
@@ -94,9 +104,7 @@ class SellThread(threading.Thread):
                     if wait_cnt > settings.SELLING_WAIT:
                         logger.info("[SellThread][run] stop selling thread because cnt > " + str(settings.SELLING_WAIT))
                         logger.info("[SellThread][run] wait_cnt : " + str(wait_cnt))
-                        logger.info("[SellThread][run] current_price : " + str(current_price))
-                        logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
-                        logger.info("[SellThread][run] currentQty : " + str(currentQty))
+                        logger.info("[SellThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
 
                         break
 
@@ -110,8 +118,7 @@ class SellThread(threading.Thread):
 
                         logger.info("[SellThread][run] ### Additional buying ###")
                         logger.info("[SellThread][run] current_price + averagingDownSize("+str(self.averagingDownSize)+") > avgCostPrice")
-                        logger.info("[SellThread][run] current_price : " + str(current_price))
-                        logger.info("[SellThread][run] avgCostPrice : " + str(avgCostPrice))
+                        logger.info("[SellThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice))
 
                         self.custom_strategy.exchange.cancel_all_orders('All')
                         singleton_data.getInstance().setAllowBuy(True)

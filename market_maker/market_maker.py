@@ -27,7 +27,6 @@ watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 #
 logger = log.setup_custom_logger('root')
 
-
 class ExchangeInterface:
     def __init__(self, dry_run=False):
         logger.info("[ExchangeInterface][__init__]")

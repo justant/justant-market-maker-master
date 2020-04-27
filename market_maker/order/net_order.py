@@ -1,10 +1,10 @@
-import logging
 
 import settings
 import math
 from market_maker.utils.singleton import singleton_data
+from market_maker.utils import log
 
-logger = logging.getLogger('root')
+logger = log.setup_custom_logger('root')
 
 def net_buy(custom_strategy):
     current_price = custom_strategy.exchange.get_instrument()['lastPrice']
@@ -19,9 +19,9 @@ def net_buy(custom_strategy):
 
     ret = custom_strategy.converge_orders(buy_orders, [])
     logger.info("[net_order][normal_buy] order length : " + str(len(ret)))
+    logger.info("[net_order][normal_buy] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
 
     singleton_data.getInstance().setAllowBuy(False)
-    logger.info("[net_order][normal_buy] after self.converge_orders")
     logger.info("[net_order][normal_buy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
 
 #def net_buy(custom_strategy):
