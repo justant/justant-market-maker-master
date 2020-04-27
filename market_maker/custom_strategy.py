@@ -6,6 +6,7 @@ import logging
 import pandas as pd
 
 #from market_maker import _settings_base
+from market_maker.order import net_order
 from market_maker.order.sell_thread import SellThread
 from market_maker.plot import analysis
 from market_maker.plot.bitmex_plot import bitmex_plot
@@ -59,7 +60,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
         logger.info("[strategy] rsi + stoch_d : " + str(self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0])[:5])
         logger.info("[strategy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
 
-        default_Qty = settings.DEFAULT_ORDER_SIZE
         orders = self.exchange.get_orders()
         #logger.info("[CustomOrderManager] before buying orders : " + str(orders))
         logger.info("[strategy] len(orders) : " + str(len(orders)))
@@ -70,40 +70,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
             if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
             #if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
-
-                current_price = self.exchange.get_instrument()['lastPrice']
-                logger.info("[strategy][buy] current_price(2) : " + str(current_price))
-                buy_orders = []
-
-                for i in range(1, 11):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(11, 21):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(21, 31):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 2, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(31, 41):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 2, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(41, 51):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(51, 61):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 3, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(61, 71):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(71, 81):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 4, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                '''
-                for i in range(81, 91):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                for i in range(91, 101):
-                    buy_orders.append({'price': current_price - i * 0.5, 'orderQty': default_Qty * 5, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
-                '''
-                ret = self.converge_orders(buy_orders, [])
-                #logger.info("[strategy][buy] ret : " + str(ret))
-                logger.info("[strategy][buy] order length : " + str(len(ret)))
-
-                singleton_data.getInstance().setAllowBuy(False)
-                logger.info("[strategy][buy] after self.converge_orders")
-                logger.info("[strategy][buy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
+                net_order.net_buy(self)
 
         ##### Selling Logic #####
         # rsi > 70.0 & stoch_d > 80.0
