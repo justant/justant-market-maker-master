@@ -33,8 +33,8 @@ class BitMEXWebsocket():
     def __init__(self):
         self.logger = logging.getLogger('root')
 
-        setup_custom_logger('execution', log_level=settings.LOG_LEVEL)
-        self.exe_logger = logging.getLogger('execution')
+        setup_custom_logger('order', log_level=settings.LOG_LEVEL)
+        self.exe_logger = logging.getLogger('order')
 
         self.__reset()
 

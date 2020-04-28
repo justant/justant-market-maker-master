@@ -8,7 +8,8 @@ from market_maker.utils.singleton import singleton_data
 from market_maker.utils import log
 
 logger = log.setup_custom_logger('root')
-exe_logger = log.setup_custom_logger('exception')
+execept_logger = log.setup_custom_logger('exception')
+execute_logger = log.setup_custom_logger('order')
 
 class SellThread(threading.Thread):
     def __init__(self, custom_strategy):
@@ -33,6 +34,9 @@ class SellThread(threading.Thread):
             self.minSellingGap = float(settings.MIN_SELLING_GAP) * float(currentQty / settings.MAX_ORDER_QUENTITY)
 
         logger.info("[SellThread][run] minSellingGap : " + str(self.minSellingGap))
+
+        self.waiting_sell_order = []
+        self.wait_cnt = 0
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
@@ -44,7 +48,7 @@ class SellThread(threading.Thread):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, f.f_globals)
         logger.info("[SellThread][run] " + str('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)))
-        exe_logger.info("[SellThread][run] " + str('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)))
+        execept_logger.info("[SellThread][run] " + str('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)))
 
     #def retry_sell(self):
     #def ammend_sell(self):
@@ -53,8 +57,7 @@ class SellThread(threading.Thread):
         logger.info("[SellThread][run]")
         # Cancel all sell orders
         self.custom_strategy.exchange.cancel_all_orders('Sell')
-        self.waiting_sell_order = []
-        wait_cnt = 0
+
 
         while not singleton_data.getInstance().getAllowBuy():
             try:
@@ -67,7 +70,7 @@ class SellThread(threading.Thread):
 
                 #check selling order
                 if len(self.waiting_sell_order) > 0:
-                    expectedProfit = (current_price - avgCostPrice) * currentQty
+                    expectedProfit = (float(current_price) - float(avgCostPrice)) * float(currentQty)
                     if self.check_sell_order(expectedProfit):
                         singleton_data.getInstance().setAllowBuy(True)
                         break
@@ -81,10 +84,10 @@ class SellThread(threading.Thread):
                     sell_order = self.custom_strategy.exchange.get_orders('Sell')
 
                     if len(sell_order) == 1:
-                        if float(current_price) + 3.0 > float(sell_order[0]['price']):
+                        # 3.0 move to settings
+                        if float(current_price) + 3.0 > float(sell_order[0]['price'] + float(self.minSellingGap)):
                             # flee away 3$ form first oder_price, amend order
                             # reorder
-                            self.custom_strategy.exchange.cancel_all_orders('Sell')
                             self.waiting_sell_order = self.make_sell_order()
                             logger.info("[SellThread][run] AMEND : waiting_sell_order : " + str(self.waiting_sell_order))
                         else :
@@ -99,11 +102,11 @@ class SellThread(threading.Thread):
 
                 # waiting (default:120) secs condition
                 elif float(current_price) > float(avgCostPrice):
-                    wait_cnt += 1
+                    self.wait_cnt += 1
 
-                    if wait_cnt > settings.SELLING_WAIT:
+                    if self.wait_cnt > settings.SELLING_WAIT:
                         logger.info("[SellThread][run] stop selling thread because cnt > " + str(settings.SELLING_WAIT))
-                        logger.info("[SellThread][run] wait_cnt : " + str(wait_cnt))
+                        logger.info("[SellThread][run] wait_cnt : " + str(self.wait_cnt))
                         logger.info("[SellThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
 
                         break
@@ -133,17 +136,14 @@ class SellThread(threading.Thread):
                 self.PrintException()
                 break
 
-            logger.info("[SellThread][run] wait_cnt : " + str(wait_cnt))
+            logger.info("[SellThread][run] wait_cnt : " + str(self.wait_cnt))
             sleep(1)
 
+        self.custom_strategy.exchange.cancel_all_orders('Sell')
         singleton_data.getInstance().setSellThread(False)
 
     def make_sell_order(self):
         logger.info("[SellThread][make_sell_order] start")
-
-        current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
-        #avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
-        currentQty = self.custom_strategy.exchange.get_currentQty()
 
         # if it couldn't oder, retry it
         cancel_retryCnt = 0
@@ -152,6 +152,15 @@ class SellThread(threading.Thread):
         try:
             while len(current_order) == 0:
                 sell_orders = []
+                current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
+                #avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
+                currentQty = self.custom_strategy.exchange.get_currentQty()
+
+                # buy는 냅두고 sell order만으로 바꿔야한다
+                # 그래야지 실패하더라도 buy는 냅둬서 다시 주워담을수 있다
+                # 모든걸 취소하게되면 팔리지 않을시 최악의 경우에는 기존 buy는 모두 취소되고 selling만을 기다려야 한다
+                #self.custom_strategy.exchange.cancel_all_orders('Sell')
+                self.custom_strategy.exchange.cancel_all_orders('All')
 
                 if cancel_retryCnt < 10:
                     sell_orders.append({'price': current_price, 'orderQty': currentQty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
@@ -160,14 +169,20 @@ class SellThread(threading.Thread):
 
                 logger.info("[SellThread][make_sell_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
                 current_order = self.custom_strategy.converge_orders([], sell_orders)
+                logger.info("[SellThread][make_sell_order] current_order : " + str(current_order))
+
+                # buy는 냅두고 sell order만으로 바꿔야한다
+                current_sell_order = self.custom_strategy.exchange.get_orders('Sell')
+                logger.info("[SellThread][make_sell_order] current_sell_order : " + str(current_sell_order))
 
                 if len(current_order) == 1:
                     if current_order[0]['ordStatus'] == 'Canceled':
                         cancel_retryCnt += 1
                         logger.info("[SellThread][make_sell_order] order Status == Canceled")
                         logger.info("[SellThread][make_sell_order] reason : " + str(current_order[0]['text']))
-                        logger.info("[SellThread][make_sell_order] sell order retry")
+                        logger.info("[SellThread][make_sell_order] sell order retry : " + str(cancel_retryCnt))
                         current_order = []
+                        sleep(0.2)
                     elif current_order[0]['ordStatus'] == 'New':
                         logger.info("[SellThread][make_sell_order] order Status == New")
                         break
@@ -175,7 +190,7 @@ class SellThread(threading.Thread):
                     logger.info("[SellThread][make_sell_order] Abnormal Selling current_order length: " + str(len(current_order)))
                     logger.info("[SellThread][make_sell_order] Abnormal Selling current_order : " + str(current_order))
                     logger.info("[SellThread][make_sell_order] Abnormal Selling current_order cancel ")
-                    self.custom_strategy.exchange.cancel_all_orders('All')
+                    self.custom_strategy.exchange.cancel_all_orders('Sell')
                     logger.info("[SellThread][make_sell_order] retry after Abnormal Selling order")
                     current_order = []
 
@@ -195,6 +210,8 @@ class SellThread(threading.Thread):
             # selling complete
             logger.info("[SellThread][check_sell_order] selling complete!")
             logger.info("[SellThread][check_sell_order] ######  profit : + " + str(expectedProfit) + "$  ######")
+            execute_logger.info("######  profit : + " + str(expectedProfit) + "$  ######")
+
             self.custom_strategy.exchange.cancel_all_orders('All')
             ret = True
             self.waiting_sell_order = []

@@ -36,7 +36,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
         currentQty = position['currentQty']
 
         # False condtion is for Testing
-        if(True):
+        if(False):
             if currentQty > 0:
                 singleton_data.getInstance().setAllowBuy(False)
                 logger.info("[strategy] init setAllowBuy : False")
@@ -51,7 +51,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
         avgCostPrice = self.exchange.get_avgCostPrice()
         currentQty = self.exchange.get_currentQty()
 
-        logger.info("[strategy] current_price(1) : " + str(current_price))
+        logger.info("[strategy] current_price : " + str(current_price))
         logger.info("[strategy] avgCostPrice : " + str(avgCostPrice))
         logger.info("[strategy] currentQty : " + str(currentQty))
 

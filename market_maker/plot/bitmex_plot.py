@@ -24,6 +24,8 @@ style.use('fivethirtyeight')
 class bitmex_plot():
 
     def __init__(self):
+        for i in range(0, 5):
+            logger.info("==============================================================================================================")
         logger.info("[bitmex_plot][__init__]")
 
         self.current_data_cnt = 0;

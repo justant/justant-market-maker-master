@@ -2,7 +2,7 @@ import pandas as pd
 from market_maker.utils import log
 
 logger = log.setup_custom_logger('root')
-log.setup_custom_logger('exception')
+#log.setup_custom_logger('order')
 
 class singleton_data:
     _instance = None
@@ -50,6 +50,7 @@ class singleton_data:
         return update_required
 
     def setAllowBuy(self, value):
+        logger.info("[setAllowBuy] :" + str(value))
         self.allow_buy = value
 
     def getAllowBuy(self):
@@ -59,10 +60,12 @@ class singleton_data:
         return self.is_sell_thread_run
 
     def setSellThread(self, value):
+        logger.info("[setSellThread] :" + str(value))
         self.is_sell_thread_run = value
 
     def isBuyThreadRun(self):
         return self.is_buy_thread_run
 
     def setBuyThread(self, value):
+        logger.info("[setBuyThread] :" + str(value))
         self.is_buy_thread_run = value

@@ -29,12 +29,7 @@ def setup_custom_logger(name, log_level=settings.LOG_LEVEL):
         abs_file_path = os.path.join(script_dir, rel_path)
         os.makedirs(abs_file_path, exist_ok = True)
 
-        if name == 'execution':
-            fileHandler = logging.FileHandler(abs_file_path + '/order.log')
-        elif name == 'exception':
-            fileHandler = logging.FileHandler(abs_file_path + '/exception.log')
-        else :
-            fileHandler = logging.FileHandler(abs_file_path + '/' + timestr + '.log')
+        fileHandler = logging.FileHandler(abs_file_path + '/' + name + '.log')
 
         streamHandler.setFormatter(formatter)
         fileHandler.setFormatter(formatter)

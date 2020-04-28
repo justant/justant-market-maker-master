@@ -58,12 +58,12 @@ class ExchangeInterface:
     def cancel_all_orders(self, filter='All'):
         # filter : All, Sell, Buy
 
-        logger.info("[ExchangeInterface][cancel_all_orders]")
+        logger.info("[ExchangeInterface][cancel_all_orders] filter : " + str(filter))
 
         if self.dry_run:
             return
 
-        logger.info("Resetting current position. Canceling all existing orders, filter : " + str(filter))
+        #logger.info("Resetting current position. Canceling all existing orders, filter : " + str(filter))
         tickLog = self.get_instrument()['tickLog']
 
         # In certain cases, a WS update might not make it through before we call this.
@@ -205,7 +205,7 @@ class ExchangeInterface:
     def get_orders(self, filter='All'):
         # filter : All, Sell, Buy
 
-        logger.info("[ExchangeInterface][get_orders]")
+        #logger.info("[ExchangeInterface][get_orders]")
 
         if self.dry_run:
             return []
