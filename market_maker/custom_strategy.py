@@ -36,7 +36,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
         currentQty = position['currentQty']
 
         # False condtion is for Testing
-        if(False):
+        if(True):
             if currentQty > 0:
                 singleton_data.getInstance().setAllowBuy(False)
                 logger.info("[strategy] init setAllowBuy : False")
