@@ -208,8 +208,7 @@ class SellThread(threading.Thread):
             current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
 
             if not float(current_price) > float(avgCostPrice) + float(self.minSellingGap):
-                logger.info("[SellThread][check_sell_order] float(current_price) > float(avgCostPrice) + float(self.minSellingGap)")
-                logger.info("[SellThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", minSellingGap : " + str(self.minSellingGap))
+                logger.info("[SellThread][check_sell_order] current_price(" + str(current_price) +") > avgCostPrice(" + str(avgCostPrice) + ") + minSellingGap(" + str(self.minSellingGap) + ")")
                 self.waiting_sell_order = []
                 self.custom_strategy.exchange.cancel_all_orders('Sell')
                 ret = False
@@ -219,9 +218,9 @@ class SellThread(threading.Thread):
                 # flee away 3$ form first oder_price, amend order
                 # reorder
                 self.waiting_sell_order = self.make_sell_order()
-                logger.info("[SellThread][run] reorder current_price - 3$ : waiting_sell_order : " + str(self.waiting_sell_order))
+                logger.info("[SellThread][check_sell_order] reorder current_price - 3$ : waiting_sell_order : " + str(self.waiting_sell_order))
             else :
-                logger.info("[SellThread][run] The price you ordered has not dropped by more than $ 3 from the current price.")
+                logger.info("[SellThread][check_sell_order] The price you ordered has not dropped by more than $ 3 from the current price.")
 
             logger.info("[SellThread][check_sell_order] not yet selling")
 
