@@ -10,19 +10,19 @@ here = dirname(__file__)
 
 setup(name='bitmex-market-maker',
       version=market_maker.__version__,
-      description='Market making bot for BitMEX API',
+      description='Just bot for BitMEX API',
       url='https://github.com/BitMEX/sample-market-maker',
       long_description=open(join(here, 'README.md')).read(),
       long_description_content_type='text/markdown',
-      author='Samuel Reed',
-      author_email='sam@bitmex.com',
+      author='Justant Seo',
+      author_email='suhday@naver.com',
       install_requires=[
           'requests',
           'websocket-client',
           'future'
       ],
-      packages=['market_maker', 'market_maker.auth', 'market_maker.utils', 'market_maker.ws'],
+      packages=['market_maker', 'market_maker.auth', 'market_maker.order', 'market_maker.plot', 'market_maker.utils', 'market_maker.ws', 'log', 'client_api'],
       entry_points={
-          'console_scripts': ['marketmaker = market_maker:run']
+          'console_scripts': ['marketmaker = custom_strategy:run']
       }
       )

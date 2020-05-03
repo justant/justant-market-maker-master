@@ -301,6 +301,17 @@ class ExchangeInterface:
             return orders
         return self.bitmex.create_bulk_orders(orders)
 
+    def create_order(self, order_type, quantity, price):
+        logger.info("[ExchangeInterface][create_order]")
+
+        if self.dry_run:
+            return None
+
+        if order_type == 'Buy':
+            return self.bitmex.buy(quantity, price)
+        elif order_type == 'Sell':
+            return self.bitmex.sell(quantity, price)
+
     def cancel_bulk_orders(self, orders):
         logger.info("[ExchangeInterface][cancel_bulk_orders]")
 

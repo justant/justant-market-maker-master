@@ -35,6 +35,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
         position = self.exchange.get_position()
         currentQty = position['currentQty']
 
+        # default : 0, test : 1~n
+        #singleton_data.getInstance().setAveDownCnt(1)
+
         # False condtion is for Testing
         if(True):
             if currentQty > 0:
@@ -68,14 +71,15 @@ class CustomOrderManager(OrderManager, threading.Thread):
         ##### Buying Logic #####
         # rsi < 30.0 & stoch_d < 20.0
         if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
-            if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
+            #if self.analysis['rsi'].values[0] < 30.0 or self.analysis['stoch_d'].values[0] < 20.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 50.0:
+            if self.analysis['rsi'].values[0] < 40.0 or self.analysis['stoch_d'].values[0] < 30.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] < 70.0:
             #if True: # for test
                 logger.info("[strategy][buy] rsi < 30.0, stoch_d < 20.0")
                 net_order.net_buy(self)
 
         ##### Selling Logic #####
         # rsi > 70.0 & stoch_d > 80.0
-        if not singleton_data.getInstance().getAllowBuy():
+        elif not singleton_data.getInstance().getAllowBuy():
             if self.analysis['rsi'].values[0] > 70.0 or self.analysis['stoch_d'].values[0] > 80.0 or self.analysis['rsi'].values[0] + self.analysis['stoch_d'].values[0] > 150.0:
             #if True: # for test
                 logger.info("[strategy][sell] rsi > 70.0, stoch_d > 80.0")

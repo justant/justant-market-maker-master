@@ -22,6 +22,7 @@ class singleton_data:
         self.allow_buy = True
         self.is_sell_thread_run = False
         self.is_buy_thread_run = False
+        self.aveDownCnt = 0
 
     def setOHLC_data(self, newData):
         self.ohld_data = newData
@@ -69,3 +70,10 @@ class singleton_data:
     def setBuyThread(self, value):
         logger.info("[setBuyThread] :" + str(value))
         self.is_buy_thread_run = value
+
+    def getAveDownCnt(self):
+        return self.aveDownCnt
+
+    def setAveDownCnt(self, value):
+        #logger.info("[setAveDownCnt] :" + str(value))
+        self.aveDownCnt = value
