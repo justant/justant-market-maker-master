@@ -15,7 +15,7 @@ def net_buy(custom_strategy):
 
 
     # manual
-    #current_price = 8850.0
+    #current_price = 9400.0
 
     for i in range(1, buy_level + 1):
         for j in range(1, 21):
