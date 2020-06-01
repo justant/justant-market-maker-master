@@ -16,14 +16,14 @@ class BuyThread(threading.Thread):
         logger.info("[BuyThread][run] __init__")
         threading.Thread.__init__(self)
         self.custom_strategy = custom_strategy
-        singleton_data.getInstance().setAllowBuy(False)
+        singleton_data.getInstance().setAllowSell(False)
         singleton_data.getInstance().setBuyThread(True)
 
         # 70.0 *  2^n
         p = 2 ** int(singleton_data.getInstance().getAveDownCnt())
-        self.averagingDownSize = settings.AVERAGING_DOWN_SIZE * p
+        self.averagingUpSize = settings.AVERAGING_UP_SIZE * p
 
-        logger.info("[BuyThread][run] averagingDownSize : " + str(self.averagingDownSize))
+        logger.info("[BuyThread][run] averagingUpSize : " + str(self.averagingUpSize))
 
         # default(20.0) * (current_quantity / max_order_quantity)
         # The maximum value is the default even if the quantity you have now is greater than max_order.
@@ -91,9 +91,9 @@ class BuyThread(threading.Thread):
                     else :
                         # check Additional buying #
                         # even though buying in not allow,
-                        # ave_price largger that cur_price + averagingDownSize(default : 50$), making ave_down
-                        #logger.info("[BuyThread][run] current_price + averagingDownSize < avgCostPrice : " + str(float(current_price) + float(self.averagingDownSize) < float(avgCostPrice)))
-                        if float(current_price) + float(self.averagingDownSize) > float(avgCostPrice):
+                        # ave_price largger that cur_price + averagingUpSize(default : 50$), making ave_down
+                        #logger.info("[BuyThread][run] current_price + averagingUpSize < avgCostPrice : " + str(float(current_price) + float(self.averagingUpSize) < float(avgCostPrice)))
+                        if float(current_price) + float(self.averagingUpSize) > float(avgCostPrice):
 
                             buy_orders = self.custom_strategy.exchange.get_orders('Buy')
                             if len(buy_orders) > 0:
@@ -101,7 +101,7 @@ class BuyThread(threading.Thread):
 
                             else :
                                 logger.info("[BuyThread][run] ##### Additional Selling #####")
-                                logger.info("[BuyThread][run] current_price + averagingDownSize(" + str(self.averagingDownSize) + ") < avgCostPrice")
+                                logger.info("[BuyThread][run] current_price + averagingUpSize(" + str(self.averagingUpSize) + ") < avgCostPrice")
                                 logger.info("[BuyThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice))
 
                                 aveCnt = singleton_data.getInstance().getAveDownCnt() + 1
