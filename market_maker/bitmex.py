@@ -96,8 +96,8 @@ class BitMEX(object):
         """
         return self.ws.recent_trades()
 
-    def tradeBin1m(self):
-        return self.ws.get_tradeBin1m()
+    def get_trade_bin(self, binSize='1m'):
+        return self.ws.get_trade_bin(binSize)
 
     #
     # Authentication required methods
@@ -374,8 +374,16 @@ class BitMEX(object):
 
     #bitmex_client = bitmex(test=False, api_key=bitmex_api_key, api_secret=bitmex_api_secret)
 
-    def minutes_of_new_data(self, symbol, min_span):
+    def minutes_of_new_data(self, symbol, min_span, binSize = '1m'):
         path = "trade/bucketed"
+        cnt = 120
+
+        if binSize == '1m':
+            min_span = min_span * 1
+        elif binSize == '5m':
+            min_span = min_span * 30
+            binSize = '5m'
+            cnt = cnt * 6;
 
         now = datetime.datetime.utcnow()
         previous_time = now - datetime.timedelta(minutes=min_span)
@@ -385,8 +393,8 @@ class BitMEX(object):
 
         postdict = {
             'symbol': symbol,
-            'binSize': '1m',
-            'count' : min_span,
+            'binSize': binSize,
+            'count' : cnt,
             'startTime' : dt_string
         }
 

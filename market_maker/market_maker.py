@@ -154,44 +154,15 @@ class ExchangeInterface:
             symbol = self.symbol
         return self.bitmex.instrument(symbol)
 
-    def get_tradeBin1m(self):
+    def get_tradeBin(self, bidSize = '1m'):
         update_required = False
 
         #logger.info("[ExchangeInterface][get_tradeBin1m]")
-        bin1m = self.bitmex.tradeBin1m()
 
-        #ts = []
-        #ts.append(common_util.coonvertDateFormat(bin1m['timestamp']))
+        if bidSize == '1m' or bidSize == '5m':
+            bin_data = self.bitmex.get_trade_bin(bidSize)
 
-        df = pd.DataFrame({
-            'timestamp' : [bin1m['timestamp']],
-            'symbol' : [bin1m['symbol']],
-            'open' : [bin1m['open']],
-            'high' : [bin1m['high']],
-            'low' : [bin1m['low']],
-            'close' : [bin1m['close']],
-            'trades' : [bin1m['trades']],
-            'volume' : [bin1m['volume']],
-            'vwap' : [bin1m['vwap']],
-            'lastSize' : [bin1m['lastSize']],
-            'turnover' : [bin1m['turnover']],
-            'homeNotional' : [bin1m['homeNotional']],
-            'foreignNotional' : [bin1m['foreignNotional']]},
-            index=pd.to_datetime([bin1m['timestamp']]))
-
-
-        df["open"] = df["open"].astype(float)
-        df["high"] = df["high"].astype(float)
-        df["close"] = df["close"].astype(float)
-        df["trades"] = df["trades"].astype(float)
-        df["volume"] = df["volume"].astype(float)
-        df["vwap"] = df["vwap"].astype(float)
-        df["lastSize"] = df["lastSize"].astype(float)
-        df["turnover"] = df["turnover"].astype(float)
-        df["homeNotional"] = df["homeNotional"].astype(float)
-        df["foreignNotional"] = df["foreignNotional"].astype(float)
-
-        update_required = singleton_data.getInstance().appendOHLC_data(df)
+        update_required = singleton_data.getInstance().appendOHLC_data(bin_data, bidSize)
 
         return update_required
 
@@ -319,14 +290,14 @@ class ExchangeInterface:
             return orders
         return self.bitmex.cancel([order['orderID'] for order in orders])
 
-    def minutes_of_new_data(self, min_span):
-        logger.info("[ExchangeInterface][minutes_of_new_data]")
+    def minutes_of_new_data(self, min_span, binSize = '1m'):
+        logger.info("[ExchangeInterface][minutes_of_new_data] : " + binSize)
 
         if self.dry_run:
             return min_span
         symbol = settings.SYMBOL
 
-        return self.bitmex.minutes_of_new_data(symbol, min_span)
+        return self.bitmex.minutes_of_new_data(symbol, min_span, binSize)
 
 class OrderManager():
     def __init__(self):
@@ -355,36 +326,53 @@ class OrderManager():
     def setInitOHLC(self):
         logger.info("[OrderManager][setInitOHLC]")
 
-        bin1m = self.exchange.minutes_of_new_data(60)
+        # 1 min
+        bin1m_df = self.getBinData('1m')
+        singleton_data.instance().setOHLC_1m_data(bin1m_df)
 
-        df = pd.DataFrame({
-            'timestamp' : [bin1m[i]['timestamp'] for i in range(0, len(bin1m))],
-            'symbol' : [bin1m[i]['symbol'] for i in range(0, len(bin1m))],
-            'open' : [bin1m[i]['open'] for i in range(0, len(bin1m))],
-            'high' : [bin1m[i]['high'] for i in range(0, len(bin1m))],
-            'low' : [bin1m[i]['low'] for i in range(0, len(bin1m))],
-            'close' : [bin1m[i]['close'] for i in range(0, len(bin1m))],
-            'trades' : [bin1m[i]['trades'] for i in range(0, len(bin1m))],
-            'volume' : [bin1m[i]['volume'] for i in range(0, len(bin1m))],
-            'vwap' : [bin1m[i]['vwap'] for i in range(0, len(bin1m))],
-            'lastSize' : [bin1m[i]['lastSize'] for i in range(0, len(bin1m))],
-            'turnover' : [bin1m[i]['turnover'] for i in range(0, len(bin1m))],
-            'homeNotional' : [bin1m[i]['homeNotional'] for i in range(0, len(bin1m))],
-            'foreignNotional' : [bin1m[i]['foreignNotional'] for i in range(0, len(bin1m))]},
-            index=pd.to_datetime([bin1m[i]['timestamp'] for i in range(0, len(bin1m))]))
+        # 5 mins
+        bin5m_df = self.getBinData('5m')
+        singleton_data.instance().setOHLC_5m_data(bin5m_df)
+
+    def getBinData(self, binSize = '1m'):
+        cnt = 120
+
+        bin_data = self.exchange.minutes_of_new_data(cnt, binSize)
+        df = None
+
+        if binSize == '1m' or binSize == '5m':
+            df = pd.DataFrame({
+                'timestamp' : [bin_data[i]['timestamp'] for i in range(0, len(bin_data))],
+                'symbol' : [bin_data[i]['symbol'] for i in range(0, len(bin_data))],
+                'open' : [bin_data[i]['open'] for i in range(0, len(bin_data))],
+                'high' : [bin_data[i]['high'] for i in range(0, len(bin_data))],
+                'low' : [bin_data[i]['low'] for i in range(0, len(bin_data))],
+                'close' : [bin_data[i]['close'] for i in range(0, len(bin_data))],
+                'trades' : [bin_data[i]['trades'] for i in range(0, len(bin_data))],
+                'volume' : [bin_data[i]['volume'] for i in range(0, len(bin_data))],
+
+                #'vwap' : [bin_data[i]['vwap'] for i in range(0, len(bin_data))],
+                #'lastSize' : [bin_data[i]['lastSize'] for i in range(0, len(bin_data))],
+                #'turnover' : [bin_data[i]['turnover'] for i in range(0, len(bin_data))],
+                #'homeNotional' : [bin_data[i]['homeNotional'] for i in range(0, len(bin_data))],
+                #'foreignNotional' : [bin_data[i]['foreignNotional'] for i in range(0, len(bin_data))]
+
+                },
+                index=pd.to_datetime([bin_data[i]['timestamp'] for i in range(0, len(bin_data))]))
 
         df["open"] = df["open"].astype(float)
         df["high"] = df["high"].astype(float)
         df["close"] = df["close"].astype(float)
         df["trades"] = df["trades"].astype(float)
         df["volume"] = df["volume"].astype(float)
-        df["vwap"] = df["vwap"].astype(float)
-        df["lastSize"] = df["lastSize"].astype(float)
-        df["turnover"] = df["turnover"].astype(float)
-        df["homeNotional"] = df["homeNotional"].astype(float)
-        df["foreignNotional"] = df["foreignNotional"].astype(float)
 
-        singleton_data.instance().setOHLC_data(df)
+        #df["vwap"] = df["vwap"].astype(float)
+        #df["lastSize"] = df["lastSize"].astype(float)
+        #df["turnover"] = df["turnover"].astype(float)
+        #df["homeNotional"] = df["homeNotional"].astype(float)
+        #df["foreignNotional"] = df["foreignNotional"].astype(float)
+
+        return df
 
     def reset(self):
         logger.info("[OrderManager][reset]")

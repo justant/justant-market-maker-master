@@ -121,16 +121,18 @@ WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', '
 CONTRACTS = ['XBTUSD']
 
 # When 50 $ is lower than the average price, additional purchases are made.
-AVERAGING_DOWN_SIZE = 50.0
+AVERAGING_DOWN_SIZE = 70.0
 
 # Sell ​​only when 10 $ above average price
 #MIN_SELLING_GAP = 10.0
 
 #test
 MIN_SELLING_GAP = 20.0
+MIN_BUYING_GAP = 20.0
 
 # After capturing the sales signal, wait for the desired price for 2 minutes.
 SELLING_WAIT = 120
+BUYING_WAIT = 120
 
 # first order price. after 10$, order size will be 2 times.
 # after 10$, order size will be 3 times... 4times... 5times..
@@ -141,6 +143,8 @@ DEFAULT_ORDER_SIZE = 120
 DEFAULT_ORDER_SPAN = 30
 
 MAX_ORDER_QUENTITY = calc_max_order(DEFAULT_ORDER_SIZE, DEFAULT_ORDER_SPAN)
+
+DEFUALT_SWING_ORDER_SIZE = 2000
 
 # Whether to draw a graph or not
 PLOT_RUNNING = False

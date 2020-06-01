@@ -54,6 +54,7 @@ class BitMEXWebsocket():
         subscriptions += ["instrument:" + symbol]  # We want all of them
         #subscriptions += ["trade"]  # We want all of them
         subscriptions += ["tradeBin1m:" + symbol]  # We want all of them
+        subscriptions += ["tradeBin5m:" + symbol]  # We want all of them
 
 
 
@@ -142,10 +143,15 @@ class BitMEXWebsocket():
     def recent_trades(self):
         return self.data['trade']
 
-    def get_tradeBin1m(self):
-        tradeBin1ms = self.data['tradeBin1m']
+    def get_trade_bin(self, binSize):
+        trade_bin = None
 
-        return tradeBin1ms[len(tradeBin1ms)-1];
+        if binSize == '1m':
+            trade_bin = self.data['tradeBin1m']
+        elif binSize == '5m':
+            trade_bin = self.data['tradeBin5m']
+
+        return trade_bin[len(trade_bin)-1];
 
     # Lifecycle methods
     #

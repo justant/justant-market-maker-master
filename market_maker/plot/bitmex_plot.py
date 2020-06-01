@@ -10,6 +10,9 @@ import talib as ta
 from matplotlib.dates import date2num
 from matplotlib import style
 from mpl_finance import candlestick_ohlc as candlestick
+
+from market_maker.plot import analysis
+
 from market_maker.utils import log
 import time
 
@@ -56,21 +59,9 @@ class bitmex_plot():
                                              '3':sec_id.high,
                                              '4':sec_id.low}))
 
-        #self.analysis = pd.DataFrame(index = sec_id.index)
-        self.analysis = pd.DataFrame(index = date2num(sec_id.index))
+
         #self.analysis.Date.dt.tz_localize('UTC')
-
-        self.analysis['sma_f'] = sec_id.close.rolling(self.SMA_FAST).mean()
-        self.analysis['sma_s'] = sec_id.close.rolling(self.SMA_SLOW).mean()
-        self.analysis['rsi'] = ta.RSI(sec_id.close.to_numpy(), self.RSI_PERIOD)
-        self.analysis['sma_r'] = self.analysis.rsi.rolling(self.RSI_PERIOD).mean()
-        self.analysis['macd'], self.analysis['macdSignal'], self.analysis['macdHist'] = ta.MACD(sec_id.close.to_numpy(), fastperiod=self.MACD_FAST, slowperiod=self.MACD_SLOW, signalperiod=self.MACD_SIGNAL)
-        self.analysis['stoch_k'], self.analysis['stoch_d'] = ta.STOCH(sec_id.high.to_numpy(), sec_id.low.to_numpy(), sec_id.close.to_numpy(), fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0) #slowk_period=self.STOCH_K, slowd_period=self.STOCH_D)
-
-        self.analysis['sma'] = np.where(self.analysis.sma_f > self.analysis.sma_s, 1, 0)
-        #self.analysis['macd_test'] = np.where((self.analysis.macd > self.analysis.macdSignal), 1, 0)
-        #self.analysis['stoch_k_test'] = np.where((self.analysis.stoch_k < 50) & (self.analysis.stoch_k > self.analysis.stoch_k.shift(1)), 1, 0)
-        #self.analysis['rsi_test'] = np.where((self.analysis.rsi < 50) & (self.analysis.rsi > self.analysis.rsi.shift(1)), 1, 0)
+        self.analysis = analysis.get_analysis(False)
 
         # Prepare plot
         self.fig, (self.ax1, self.ax2, self.ax3, self.ax4) = plt.subplots(4, 1, sharex=True)
