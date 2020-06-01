@@ -73,6 +73,7 @@ class OrderThread(threading.Thread):
         self.custom_strategy.exchange.cancel_all_orders('All')
         singleton_data.getInstance().setAllowOrder(True)
         singleton_data.getInstance().setOrderThread(False)
+        singleton_data.instance().setSwitchMode(False)
 
     def make_order(self):
         logger.info("[OrderThread][make_order] start")
@@ -87,7 +88,7 @@ class OrderThread(threading.Thread):
             while len(current_order) == 0:
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                 avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
-                currentQty = self.custom_strategy.exchange.get_currentQty()
+                currentQty = abs(self.custom_strategy.exchange.get_currentQty())
 
                 logger.info("[OrderThread][make_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
                 if cancel_retryCnt < 10:
@@ -95,9 +96,9 @@ class OrderThread(threading.Thread):
                 else :
                     #orders.append({'price': current_price + 0.5, 'orderQty': currentQty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                     if self.order_type == 'Buy':
-                        current_order = self.custom_strategy.exchange.create_order(self.order_type, abs(currentQty), current_price - 0.5)
-                    else:
-                        current_order = self.custom_strategy.exchange.create_order(self.order_type, abs(currentQty) * -1, current_price + 0.5)
+                        current_order = self.custom_strategy.exchange.create_order(self.order_type, currentQty, current_price - 0.5)
+                    elif self.order_type == 'Sell':
+                        current_order = self.custom_strategy.exchange.create_order(self.order_type, currentQty, current_price + 0.5)
 
                 logger.info("[OrderThread][make_order] current_order : " + str(current_order))
 

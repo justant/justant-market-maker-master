@@ -108,7 +108,7 @@ class BuyThread(threading.Thread):
                                 singleton_data.getInstance().setAveDownCnt(aveCnt)
                                 logger.info("[BuyThread][run] aveCnt : " + str(aveCnt))
 
-                                singleton_data.getInstance().setAllowBuy(True)
+                                singleton_data.getInstance().setAllowSell(True)
 
                         else :
                             logger.info("[BuyThread][run] Not yet additional buying")
@@ -118,7 +118,7 @@ class BuyThread(threading.Thread):
                 #check buying order
                 elif len(self.waiting_buy_order) > 0:
                     if self.check_buy_order(avgCostPrice):
-                        singleton_data.getInstance().setAllowBuy(True)
+                        singleton_data.getInstance().setAllowSell(True)
                         break
 
                 else :

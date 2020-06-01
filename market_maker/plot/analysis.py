@@ -5,6 +5,7 @@ import numpy as np
 import talib as ta
 from matplotlib.dates import date2num
 from market_maker.order.super_trend import getSuperTrend
+from dateutil.parser import parse
 
 SMA_FAST = 50
 SMA_SLOW = 200
@@ -21,6 +22,26 @@ LINE_WIDTH = 1
 
 logger = logging.getLogger('root')
 
+def trim_30m(bin5m_data):
+    first_idx = 0
+    last_idx = len(bin5m_data) - 1
+    for i in range(0, len(bin5m_data)):
+        temp_time = bin5m_data['timestamp'][i]
+        dt = parse(temp_time)
+        if dt.time().minute == 5 or dt.time().minute == 35:
+            first_idx = i
+            break
+
+    for i in range(len(bin5m_data) - 10, len(bin5m_data)):
+        temp_time = bin5m_data['timestamp'][i]
+        dt = parse(temp_time)
+
+        if dt.time().minute == 0 or dt.time().minute == 30:
+            last_idx = i
+
+    return first_idx, last_idx
+
+
 def get_analysis(getOnlyLast = False, bidSize = '1m'):
     sec_id = None
 
@@ -31,11 +52,13 @@ def get_analysis(getOnlyLast = False, bidSize = '1m'):
     elif bidSize == '30m':
         bin5m_data = singleton_data.getInstance().getOHLC_5m_data()
 
+        first_idx, last_idx = trim_30m(bin5m_data)
+
         logger.info("[get_analysis] len(bin5m_data) " + str(len(bin5m_data)))
 
         temp_list = []
-        for i in range(0, len(bin5m_data)):
-            if not i % 6 == 0:
+        for i in range(first_idx, last_idx + 1):
+            if not i % 6 == first_idx:
                 continue
 
             temp_map = {}
@@ -60,7 +83,7 @@ def get_analysis(getOnlyLast = False, bidSize = '1m'):
 
             temp_list.append(temp_map)
 
-        cnt = int((len(bin5m_data) / 6))
+        cnt = int((last_idx + 1 - first_idx) / 6)
 
         df = pd.DataFrame({
             'timestamp' : [temp_list[i]['timestamp'] for i in range(0, cnt)],

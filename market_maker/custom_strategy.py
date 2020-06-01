@@ -46,64 +46,71 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
         # False condtion is for Testing
         if(True):
-            if abs(currentQty) > 0:
-                if (self.analysis_30m['Direction'] == "Long").bool():
-                    singleton_data.instance().setMode("Buy")
+            if (self.analysis_30m['Direction'] == "Long").bool():
+                singleton_data.instance().setMode("Buy")
+                if abs(currentQty) > 0:
                     singleton_data.getInstance().setAllowBuy(False)
-                elif (self.analysis_30m['Direction'] == "Short").bool():
-                    singleton_data.instance().setMode("Sell")
-                    singleton_data.getInstance().setAllowSell(False)
-            else :
-                if (self.analysis_30m['Direction'] == "Long").bool():
-                    singleton_data.instance().setMode("Buy")
+                else :
                     singleton_data.getInstance().setAllowBuy(True)
-                elif (self.analysis_30m['Direction'] == "Short").bool():
-                    singleton_data.instance().setMode("Sell")
+            elif (self.analysis_30m['Direction'] == "Short").bool():
+                singleton_data.instance().setMode("Sell")
+                if abs(currentQty) > 0:
+                    singleton_data.getInstance().setAllowSell(False)
+                else :
                     singleton_data.getInstance().setAllowSell(True)
+        else:
+            logger.info("[strategy] test")
+            # test, Sell mode -> Buy mode
+            #singleton_data.instance().setMode("Sell")
+            #singleton_data.getInstance().setAllowSell(True)
 
-        logger.info("[strategy] init getMode() : " + str(singleton_data.getInstance().getMode()))
-        logger.info("[strategy] init getAllowBuy() : " + str(singleton_data.getInstance().getAllowBuy()))
-        logger.info("[strategy] init getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()))
+        logger.info("[strategy][__init__] getMode() : " + str(singleton_data.getInstance().getMode()))
+        logger.info("[strategy][__init__] getAllowBuy() : " + str(singleton_data.getInstance().getAllowBuy()))
+        logger.info("[strategy][__init__] getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()))
 
     def check_current_strategy(self):
         current_price = self.exchange.get_instrument()['lastPrice']
         avgCostPrice = self.exchange.get_avgCostPrice()
         currentQty = self.exchange.get_currentQty()
 
-        logger.info("[strategy] Mode : " + str(singleton_data.instance().getMode()) + ", current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
-        logger.info("[strategy] ['rsi'] " + str(self.analysis_1m['rsi'].values[0])[:5] + ", ['stoch_d'] " + str(self.analysis_1m['stoch_d'].values[0])[:5])
+        TAG = "[strategy][" + str(singleton_data.instance().getMode()) + "]"
 
-        logger.info("[strategy] rsi + stoch_d : " + str(self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0])[:5])
-        logger.info("[strategy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()) + ", getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()))
+        logger.info(str(TAG) + " current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
+        logger.info(str(TAG) + " ['rsi'] " + str(self.analysis_1m['rsi'].values[0])[:5] + ", ['stoch_d'] " + str(self.analysis_1m['stoch_d'].values[0])[:5])
+
+        logger.info(str(TAG) + " rsi + stoch_d : " + str(self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0])[:5])
+        logger.info(str(TAG) + " getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()) + ", getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()))
 
         orders = self.exchange.get_orders()
-        logger.info("[strategy] len(orders) : " + str(len(orders)))
+        logger.info(str(TAG) + " len(orders) : " + str(len(orders)))
 
         # test
+        # Sell mode -> Buy mode
         #singleton_data.instance().setSwitchMode(True)
-        #singleton_data.instance().setMode("Sell")
+        #singleton_data.instance().setMode("Buy")
+        #singleton_data.getInstance().setAllowBuy(True)
+        #singleton_data.getInstance().setAllowSell(False)
 
         if singleton_data.instance().getSwitchMode():
-            logger.info("[strategy] getSwitchMode : True")
-            logger.info("[strategy] getMode : " + str(singleton_data.instance().getMode()))
-            logger.info("[strategy] currentQty : " + str(currentQty))
+            logger.info("[strategy][switch mode] getSwitchMode : True")
+            logger.info("[strategy][switch mode] currentQty : " + str(currentQty))
             if (singleton_data.instance().getMode() == "Buy" and currentQty < 0) or (singleton_data.instance().getMode() == "Sell" and currentQty > 0):
                 if singleton_data.getInstance().isOrderThreadRun():
-                    return
-                else:
+                    logger.info("[strategy][switch mode] isOrderThreadRun : True")
+                else :
                     self.exchange.cancel_all_orders('All')
 
                     singleton_data.getInstance().setAllowOrder(True)
                     order_th = OrderThread(self, singleton_data.instance().getMode())
                     order_th.daemon = True
                     order_th.start()
-                return
 
             else :
+                logger.info("[strategy][switch mode] getSwitchMode : True, but Keep going!")
                 singleton_data.instance().setSwitchMode(False)
 
         # Long Mode
-        if singleton_data.instance().getMode() == "Buy":
+        elif singleton_data.instance().getMode() == "Buy":
 
             ##### Buying Logic #####
             # rsi < 30.0 & stoch_d < 20.0
@@ -140,7 +147,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # Short Mode
         elif singleton_data.instance().getMode() == "Sell":
             ##### Buying Logic #####
-
             # rsi < 25.0 & stoch_d < 15.0 를 고려해볼것, short은 급락가능성이 큼
             # rsi < 30.0 & stoch_d < 20.0
             if not singleton_data.getInstance().getAllowSell():
@@ -164,7 +170,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
                         logger.info("[Short Mode][buy] ### switch mode from buying to selling ###")
                         logger.info("[Short Mode][buy] cancel all selling order")
                         self.exchange.cancel_all_orders('All')
-                        singleton_data.getInstance().setAllowBuy(True)
+                        singleton_data.getInstance().setAllowSell(True)
 
             ##### Selling Logic #####
             # rsi > 70.0 & stoch_d > 80.0
@@ -206,18 +212,17 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
                     self.analysis_30m = analysis.get_analysis(True, '30m')
 
-                    if (self.analysis_30m['Direction'] == "Long").bool():
-                        singleton_data.instance().setMode("Buy")
-                    elif (self.analysis_30m['Direction'] == "Short").bool():
-                        singleton_data.instance().setMode("Sell")
-
                     if (self.analysis_30m['Direction'] != self.analysis_30m['PreDirection']).bool():
-                        if (self.analysis_30m['Direction'] == "Long").bool():
-                            singleton_data.getInstance().setAllowBuy(True)
-                        elif (self.analysis_30m['Direction'] == "Short").bool():
-                            singleton_data.getInstance().setAllowSell(True)
-
                         singleton_data.instance().setSwitchMode(True)
+
+                        if (self.analysis_30m['Direction'] == "Long").bool():
+                            singleton_data.instance().setMode("Buy")
+                            singleton_data.getInstance().setAllowBuy(True)
+                            singleton_data.getInstance().setAllowSell(False)
+                        elif (self.analysis_30m['Direction'] == "Short").bool():
+                            singleton_data.instance().setMode("Sell")
+                            singleton_data.getInstance().setAllowBuy(False)
+                            singleton_data.getInstance().setAllowSell(True)
                     else:
                         singleton_data.instance().setSwitchMode(False)
 
