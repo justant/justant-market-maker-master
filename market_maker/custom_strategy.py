@@ -113,17 +113,17 @@ class CustomOrderManager(OrderManager, threading.Thread):
         elif singleton_data.instance().getMode() == "Buy":
 
             ##### Buying Logic #####
-            # rsi < 30.0 & stoch_d < 20.0
+            # rsi < 30.0 & stoch_d < 10.0
             if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
-                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 20.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 50.0:
-                    logger.info("[Long Mode][buy] rsi < 30.0, stoch_d < 20.0")
+                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 10.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 40.0:
+                    logger.info("[Long Mode][buy] rsi < 30.0, stoch_d < 10.0")
                     net_order.net_buy(self)
 
             ##### Selling Logic #####
-            # rsi > 70.0 & stoch_d > 80.0
+            # rsi > 70.0 & stoch_d > 90.0
             elif not singleton_data.getInstance().getAllowBuy():
-                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 80.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 150.0:
-                    logger.info("[Long Mode][sell] rsi > 70.0, stoch_d > 80.0")
+                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 90.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 160.0:
+                    logger.info("[Long Mode][sell] rsi > 70.0, stoch_d > 90.0")
 
                     position = self.exchange.get_position()
                     currentQty = position['currentQty']
@@ -147,11 +147,10 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # Short Mode
         elif singleton_data.instance().getMode() == "Sell":
             ##### Buying Logic #####
-            # rsi < 25.0 & stoch_d < 15.0 를 고려해볼것, short은 급락가능성이 큼
-            # rsi < 30.0 & stoch_d < 20.0
+            # rsi < 30.0 & stoch_d < 10.0
             if not singleton_data.getInstance().getAllowSell():
-                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 20.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 50.0:
-                    logger.info("[Short Mode][buy] rsi < 30.0, stoch_d < 20.0")
+                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 10.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 40.0:
+                    logger.info("[Short Mode][buy] rsi < 30.0, stoch_d < 10.0")
 
                     position = self.exchange.get_position()
                     currentQty = position['currentQty']
@@ -173,10 +172,10 @@ class CustomOrderManager(OrderManager, threading.Thread):
                         singleton_data.getInstance().setAllowSell(True)
 
             ##### Selling Logic #####
-            # rsi > 70.0 & stoch_d > 80.0
+            # rsi > 70.0 & stoch_d > 90.0
             elif singleton_data.getInstance().getAllowSell() and len(orders) == 0:
-                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 80.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 150.0:
-                    logger.info("[Short Mode][sell] rsi > 70.0, stoch_d > 80.0")
+                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 90.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 160.0:
+                    logger.info("[Short Mode][sell] rsi > 70.0, stoch_d > 90.0")
                     net_order.net_sell(self)
 
     def run_loop(self):
@@ -212,7 +211,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
                     self.analysis_30m = analysis.get_analysis(True, '30m')
 
-                    if (self.analysis_30m['Direction'] != self.analysis_30m['PreDirection']).bool():
+                    if ((self.analysis_30m['Direction'] == "Long").bool() and singleton_data.instance().getMode() == "Sell")\
+                            or ((self.analysis_30m['Direction'] == "Short").bool() and singleton_data.instance().getMode() == "Buy"):
                         singleton_data.instance().setSwitchMode(True)
 
                         if (self.analysis_30m['Direction'] == "Long").bool():

@@ -110,7 +110,7 @@ def get_analysis(getOnlyLast = False, bidSize = '1m'):
     analysis['Low'] = sec_id.low.to_numpy()
     analysis['Close'] = sec_id.close.to_numpy()
 
-    analysis = getSuperTrend(analysis, 3, 10)
+    analysis = getSuperTrend(analysis, 2, 16)
 
     #analysis['sma_f'] = sec_id.close.rolling(SMA_FAST).mean()
     #analysis['sma_s'] = sec_id.close.rolling(SMA_SLOW).mean()

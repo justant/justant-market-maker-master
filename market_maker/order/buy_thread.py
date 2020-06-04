@@ -93,7 +93,7 @@ class BuyThread(threading.Thread):
                         # even though buying in not allow,
                         # ave_price largger that cur_price + averagingUpSize(default : 50$), making ave_down
                         #logger.info("[BuyThread][run] current_price + averagingUpSize < avgCostPrice : " + str(float(current_price) + float(self.averagingUpSize) < float(avgCostPrice)))
-                        if float(current_price) + float(self.averagingUpSize) > float(avgCostPrice):
+                        if float(current_price) > float(avgCostPrice) + float(self.averagingUpSize):
 
                             buy_orders = self.custom_strategy.exchange.get_orders('Buy')
                             if len(buy_orders) > 0:
@@ -101,7 +101,7 @@ class BuyThread(threading.Thread):
 
                             else :
                                 logger.info("[BuyThread][run] ##### Additional Selling #####")
-                                logger.info("[BuyThread][run] current_price + averagingUpSize(" + str(self.averagingUpSize) + ") < avgCostPrice")
+                                logger.info("[BuyThread][run] current_price > avgCostPrice + + averagingUpSize(" + str(self.averagingUpSize) + ")")
                                 logger.info("[BuyThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice))
 
                                 aveCnt = singleton_data.getInstance().getAveDownCnt() + 1
@@ -235,7 +235,7 @@ class BuyThread(threading.Thread):
                 ret = False
 
             # 3.0 move to settings
-            elif float(buy_orders[0]['price']) + float(current_price) < 3.0:
+            elif float(current_price) - float(buy_orders[0]['price']) > 3.0:
                 # flee away 3$ form first oder_price, amend order
                 # reorder
                 self.waiting_buy_order = self.make_buy_order()
