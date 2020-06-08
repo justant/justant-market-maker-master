@@ -134,8 +134,12 @@ class BuyThread(threading.Thread):
             sleep(1)
 
         # Cancel all buy orders
-        self.custom_strategy.exchange.cancel_all_orders('Buy')
-        singleton_data.getInstance().setBuyThread(False)
+        try:
+            self.custom_strategy.exchange.cancel_all_orders('Buy')
+        except Exception as ex:
+            self.PrintException()
+        finally:
+            singleton_data.getInstance().setBuyThread(False)
 
     def make_buy_order(self):
         logger.info("[BuyThread][make_buy_order] start")

@@ -19,7 +19,7 @@ def net_buy(custom_strategy):
 
     for i in range(1, buy_level + 1):
         for j in range(1, 21):
-            buy_orders.append({'price': current_price - ((j * 0.5) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+            buy_orders.append({'price': current_price - ((j * 1.0) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
     '''
     for j in range(1, 101):
         buy_orders.append({'price': current_price - (j * 2), 'orderQty': 120, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
@@ -44,7 +44,8 @@ def net_sell(custom_strategy):
 
     for i in range(1, sell_level + 1):
         for j in range(1, 21):
-            sell_orders.append({'price': current_price + ((j * 0.5) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+            #sell_orders.append({'price': current_price + ((j * 0.5) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+            sell_orders.append({'price': current_price + ((j * 1.0) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
     '''
     for j in range(1, 101):
         sell_orders.append({'price': current_price - (j * 2), 'orderQty': 120, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})

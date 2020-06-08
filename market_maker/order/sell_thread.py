@@ -134,8 +134,12 @@ class SellThread(threading.Thread):
             sleep(1)
 
         # Cancel all sell orders
-        self.custom_strategy.exchange.cancel_all_orders('Sell')
-        singleton_data.getInstance().setSellThread(False)
+        try:
+            self.custom_strategy.exchange.cancel_all_orders('Sell')
+        except Exception as ex:
+            self.PrintException()
+        finally:
+            singleton_data.getInstance().setSellThread(False)
 
     def make_sell_order(self):
         logger.info("[SellThread][make_sell_order] start")

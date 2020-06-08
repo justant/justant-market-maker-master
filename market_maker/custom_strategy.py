@@ -113,17 +113,19 @@ class CustomOrderManager(OrderManager, threading.Thread):
         elif singleton_data.instance().getMode() == "Buy":
 
             ##### Buying Logic #####
-            # rsi < 30.0 & stoch_d < 10.0
+            # rsi < 30.0 & stoch_d < 20.0
             if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
-                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 10.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 40.0:
-                    logger.info("[Long Mode][buy] rsi < 30.0, stoch_d < 10.0")
+                if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH \
+                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
+                    logger.info("[Long Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
                     net_order.net_buy(self)
 
             ##### Selling Logic #####
-            # rsi > 70.0 & stoch_d > 90.0
+            # rsi > 70.0 & stoch_d > 80.0
             elif not singleton_data.getInstance().getAllowBuy():
-                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 90.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 160.0:
-                    logger.info("[Long Mode][sell] rsi > 70.0, stoch_d > 90.0")
+                if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \
+                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH:
+                    logger.info("[Long Mode][sell] rsi > " + str(settings.BASIC_UP_RSI) + ", stoch_d > " + str(settings.BASIC_UP_STOCH))
 
                     position = self.exchange.get_position()
                     currentQty = position['currentQty']
@@ -147,10 +149,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # Short Mode
         elif singleton_data.instance().getMode() == "Sell":
             ##### Buying Logic #####
-            # rsi < 30.0 & stoch_d < 10.0
+            # rsi < 30.0 & stoch_d < 20.0
             if not singleton_data.getInstance().getAllowSell():
-                if self.analysis_1m['rsi'].values[0] < 30.0 or self.analysis_1m['stoch_d'].values[0] < 10.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < 40.0:
-                    logger.info("[Short Mode][buy] rsi < 30.0, stoch_d < 10.0")
+                if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH or \
+                        self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
+                    logger.info("[Short Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
 
                     position = self.exchange.get_position()
                     currentQty = position['currentQty']
@@ -172,10 +175,12 @@ class CustomOrderManager(OrderManager, threading.Thread):
                         singleton_data.getInstance().setAllowSell(True)
 
             ##### Selling Logic #####
-            # rsi > 70.0 & stoch_d > 90.0
+            # rsi > 70.0 & stoch_d > 80.0
             elif singleton_data.getInstance().getAllowSell() and len(orders) == 0:
-                if self.analysis_1m['rsi'].values[0] > 70.0 or self.analysis_1m['stoch_d'].values[0] > 90.0 or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > 160.0:
-                    logger.info("[Short Mode][sell] rsi > 70.0, stoch_d > 90.0")
+                if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \
+                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH:
+                #if True:
+                    logger.info("[Short Mode][sell] rsi > " + str(settings.BASIC_UP_RSI)+", stoch_d > " + str(settings.BASIC_UP_STOCH))
                     net_order.net_sell(self)
 
     def run_loop(self):
