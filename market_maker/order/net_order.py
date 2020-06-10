@@ -19,6 +19,7 @@ def net_buy(custom_strategy):
 
     for i in range(1, buy_level + 1):
         for j in range(1, 21):
+            #buy_orders.append({'price': current_price - ((j * 0.5) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
             buy_orders.append({'price': current_price - ((j * 1.0) + (i - 1) * 10), 'orderQty': default_Qty * i, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
     '''
     for j in range(1, 101):

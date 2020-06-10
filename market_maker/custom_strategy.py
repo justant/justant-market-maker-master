@@ -61,7 +61,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
         else:
             logger.info("[strategy] test")
             # test, Sell mode -> Buy mode
-            #singleton_data.instance().setMode("Sell")
+            singleton_data.instance().setMode("Sell")
             #singleton_data.getInstance().setAllowSell(True)
 
         logger.info("[strategy][__init__] getMode() : " + str(singleton_data.getInstance().getMode()))
@@ -174,7 +174,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
                         self.exchange.cancel_all_orders('All')
                         singleton_data.getInstance().setAllowSell(True)
 
-            ##### Selling Logic #####
+            ##### Selling Logic #####p
             # rsi > 70.0 & stoch_d > 80.0
             elif singleton_data.getInstance().getAllowSell() and len(orders) == 0:
                 if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \

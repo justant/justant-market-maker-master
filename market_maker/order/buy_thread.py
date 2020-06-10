@@ -31,10 +31,12 @@ class BuyThread(threading.Thread):
         # The more net_buying orders, the higher the price.
         currentQty = self.custom_strategy.exchange.get_currentQty()
         logger.info("[BuyThread][run] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
+
+        self.minBuyingGap = 3.0
         if abs(currentQty) > settings.MAX_ORDER_QUENTITY:
-            self.minBuyingGap = settings.MIN_SELLING_GAP
+            self.minBuyingGap = self.minBuyingGap + settings.MIN_SELLING_GAP
         else :
-            self.minBuyingGap = float(settings.MIN_SELLING_GAP) * float(abs(currentQty) / settings.MAX_ORDER_QUENTITY)
+            self.minBuyingGap = self.minBuyingGap + float(settings.MIN_SELLING_GAP) * float(abs(currentQty) / settings.MAX_ORDER_QUENTITY)
 
         logger.info("[BuyThread][run] minBuyingGap : " + str(self.minBuyingGap))
 
@@ -195,15 +197,7 @@ class BuyThread(threading.Thread):
                     break
                 else :
                     logger.info("[BuyThread][make_buy_order] Abnormal ordStatus : " + str(current_buy_order['ordStatus']))
-                '''
-                else:
-                    logger.info("[BuyThread][make_buy_order] Abnormal Buying current_buy_order length: " + str(len(current_buy_order)))
-                    logger.info("[BuyThread][make_buy_order] Abnormal Buying current_buy_order : " + str(current_buy_order))
-                    logger.info("[BuyThread][make_buy_order] Abnormal Buying current_buy_order cancel ")
-                    self.custom_strategy.exchange.cancel_all_orders('Buy')
-                    logger.info("[BuyThread][make_buy_order] retry after Abnormal Buying order")
-                    current_buy_order = []
-                '''
+
         except Exception as ex:
             self.PrintException()
 
@@ -232,8 +226,8 @@ class BuyThread(threading.Thread):
         elif len(buy_orders) == 1:
             current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
 
-            if not float(current_price) < float(avgCostPrice) - float(self.minBuyingGap) + 3.0:
-                logger.info("[BuyThread][check_buy_order] current_price(" + str(current_price) +") < avgCostPrice(" + str(avgCostPrice) + ") - minBuyingGap(" + str(self.minBuyingGap) + ") + 3.0")
+            if not float(current_price) < float(avgCostPrice) - float(self.minBuyingGap):
+                logger.info("[BuyThread][check_buy_order] current_price(" + str(current_price) +") < avgCostPrice(" + str(avgCostPrice) + ") - minBuyingGap(" + str(self.minBuyingGap) + ")")
                 self.waiting_buy_order = {}
                 self.custom_strategy.exchange.cancel_all_orders('Buy')
                 ret = False
