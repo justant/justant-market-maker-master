@@ -121,8 +121,8 @@ WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', '
 CONTRACTS = ['XBTUSD']
 
 # When 50 $ is lower than the average price, additional purchases are made.
-AVERAGING_DOWN_SIZE = 20.0
-AVERAGING_UP_SIZE = 20.0
+AVERAGING_DOWN_SIZE = 500.0
+AVERAGING_UP_SIZE = 500.0
 
 # rsi, stoch
 BASIC_DOWN_RSI = 40.0
@@ -144,7 +144,7 @@ BUYING_WAIT = 120
 
 # first order price. after 10$, order size will be 2 times.
 # after 10$, order size will be 3 times... 4times... 5times..
-DEFAULT_ORDER_SIZE = 100
+DEFAULT_ORDER_SIZE = 200
 
 # will be order from current_price to {current_price +- 30$}
 # it should be multiples of 10 (ex: 10, 20, 30 ,,,)

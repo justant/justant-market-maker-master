@@ -73,7 +73,7 @@ class SellThread(threading.Thread):
                 if len(self.waiting_sell_order) == 0:
                     # selling condition
                     if float(current_price) > float(avgCostPrice) + float(self.minSellingGap):
-                        logger.info("[SellThread][run] current_price > avgCostPrice + " + str(self.minSellingGap))
+                        logger.info("[SellThread][run] current_price(" + str(current_price) +") > avgCostPrice(" + str(avgCostPrice) + ") + minSellingGap(" + str(self.minSellingGap) + ")")
 
                         self.waiting_sell_order = self.make_sell_order()
                         logger.info("[SellThread][run] NEW : waiting_sell_order : " + str(self.waiting_sell_order))
@@ -188,7 +188,7 @@ class SellThread(threading.Thread):
                     logger.info("[SellThread][make_sell_order] reason : " + str(current_sell_order['text']))
                     logger.info("[SellThread][make_sell_order] sell order retry : " + str(cancel_retryCnt))
                     current_sell_order = {}
-                    sleep(0.2)
+                    sleep(0.5)
                 elif current_sell_order['ordStatus'] == 'New':
                     logger.info("[SellThread][make_sell_order] order Status == New")
                     self.expectedProfit = (float(current_price) - float(avgCostPrice)) * float(currentQty)

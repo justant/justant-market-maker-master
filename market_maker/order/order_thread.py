@@ -142,8 +142,8 @@ class OrderThread(threading.Thread):
             logger.info("[OrderThread][check_order] orders : " + str(orders))
 
 
-            if abs(float(current_price) - float(orders[0]['price'])) > 3.0:
-                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 3")
+            if abs(float(current_price) - float(orders[0]['price'])) > 30.0:
+                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 30")
                 self.waiting_order = {}
                 self.custom_strategy.exchange.cancel_all_orders('All')
                 ret = False

@@ -73,7 +73,7 @@ class BuyThread(threading.Thread):
                 if len(self.waiting_buy_order) == 0:
                     # buying condition
                     if float(current_price) < float(avgCostPrice) - float(self.minBuyingGap):
-                        logger.info("[BuyThread][run] current_price < avgCostPrice + " + str(self.minBuyingGap))
+                        logger.info("[BuyThread][run] current_price(" + str(current_price) +") < avgCostPrice(" + str(avgCostPrice) + ") - minBuyingGap(" + str(self.minBuyingGap) + ")")
 
                         self.waiting_buy_order = self.make_buy_order()
                         logger.info("[BuyThread][run] NEW : waiting_buy_order : " + str(self.waiting_buy_order))
@@ -188,7 +188,7 @@ class BuyThread(threading.Thread):
                     logger.info("[BuyThread][make_buy_order] reason : " + str(current_buy_order['text']))
                     logger.info("[BuyThread][make_buy_order] buy order retry : " + str(cancel_retryCnt))
                     current_buy_order = {}
-                    sleep(0.2)
+                    sleep(0.5)
                 elif current_buy_order['ordStatus'] == 'New':
                     logger.info("[BuyThread][make_buy_order] order Status == New")
                     self.expectedProfit = (float(current_price) - float(avgCostPrice)) * float(currentQty)

@@ -61,8 +61,10 @@ class CustomOrderManager(OrderManager, threading.Thread):
         else:
             logger.info("[strategy] test")
             # test, Sell mode -> Buy mode
-            singleton_data.instance().setMode("Sell")
+            #singleton_data.instance().setMode("Sell")
             #singleton_data.getInstance().setAllowSell(True)
+            #singleton_data.instance().setMode("Buy")
+            #singleton_data.getInstance().setAllowBuy(True)
 
         logger.info("[strategy][__init__] getMode() : " + str(singleton_data.getInstance().getMode()))
         logger.info("[strategy][__init__] getAllowBuy() : " + str(singleton_data.getInstance().getAllowBuy()))
@@ -87,9 +89,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # test
         # Sell mode -> Buy mode
         #singleton_data.instance().setSwitchMode(True)
-        #singleton_data.instance().setMode("Buy")
+        #singleton_data.instance().setMode("Sell")
         #singleton_data.getInstance().setAllowBuy(True)
-        #singleton_data.getInstance().setAllowSell(False)
+        #singleton_data.getInstance().setAllowSell(True)
 
         if singleton_data.instance().getSwitchMode():
             logger.info("[strategy][switch mode] getSwitchMode : True")
@@ -115,6 +117,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
             ##### Buying Logic #####
             # rsi < 30.0 & stoch_d < 20.0
             if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
+            #if True:
                 if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH \
                         or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
                     logger.info("[Long Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
