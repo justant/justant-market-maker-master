@@ -126,7 +126,7 @@ CONTRACTS = ['XBTUSD']
 # 11 : Buying without condition
 # 2  : Selling
 # 22 : Selling without condition
-USER_MODE = 0
+USER_MODE = 22
 
 # When 50 $ is lower than the average price, additional purchases are made.
 AVERAGING_DOWN_SIZE = 5000.0

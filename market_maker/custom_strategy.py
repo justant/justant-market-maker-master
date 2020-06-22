@@ -63,13 +63,14 @@ class CustomOrderManager(OrderManager, threading.Thread):
         # Forced Buying mode
         elif self.user_mode == 1 or self.user_mode == 11:
             logger.info("[strategy] Forced Buying mode")
-            singleton_data.instance().setMode("Buying")
+            singleton_data.instance().setMode("Buy")
             singleton_data.getInstance().setAllowBuy(True)
             singleton_data.getInstance().setAllowSell(False)
 
         # Forced Selling mode
         elif self.user_mode == 2 or self.user_mode == 22:
             logger.info("[strategy] Forced Selling mode")
+            singleton_data.instance().setMode("Sell")
             singleton_data.getInstance().setAllowBuy(False)
             singleton_data.getInstance().setAllowSell(True)
 
