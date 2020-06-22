@@ -38,14 +38,16 @@ class CustomOrderManager(OrderManager, threading.Thread):
         self.analysis_1m = analysis.get_analysis(True)
         self.analysis_30m = analysis.get_analysis(True, '30m')
 
+        self.user_mode = settings.USER_MODE
+
         position = self.exchange.get_position()
         currentQty = position['currentQty']
 
         # default : 0, test : 1~n
         #singleton_data.getInstance().setAveDownCnt(1)
 
-        # False condtion is for Testing
-        if(True):
+        # 1, 11, 2, 22 condtion is for Testing
+        if self.user_mode == 0:
             if (self.analysis_30m['Direction'] == "Long").bool():
                 singleton_data.instance().setMode("Buy")
                 if abs(currentQty) > 0:
@@ -58,13 +60,19 @@ class CustomOrderManager(OrderManager, threading.Thread):
                     singleton_data.getInstance().setAllowSell(False)
                 else :
                     singleton_data.getInstance().setAllowSell(True)
-        else:
-            logger.info("[strategy] test")
-            # test, Sell mode -> Buy mode
-            #singleton_data.instance().setMode("Sell")
-            #singleton_data.getInstance().setAllowSell(True)
-            #singleton_data.instance().setMode("Buy")
-            #singleton_data.getInstance().setAllowBuy(True)
+        # Forced Buying mode
+        elif self.user_mode == 1 or self.user_mode == 11:
+            logger.info("[strategy] Forced Buying mode")
+            singleton_data.instance().setMode("Buying")
+            singleton_data.getInstance().setAllowBuy(True)
+            singleton_data.getInstance().setAllowSell(False)
+
+        # Forced Selling mode
+        elif self.user_mode == 2 or self.user_mode == 22:
+            logger.info("[strategy] Forced Selling mode")
+            singleton_data.getInstance().setAllowBuy(False)
+            singleton_data.getInstance().setAllowSell(True)
+
 
         logger.info("[strategy][__init__] getMode() : " + str(singleton_data.getInstance().getMode()))
         logger.info("[strategy][__init__] getAllowBuy() : " + str(singleton_data.getInstance().getAllowBuy()))
@@ -88,7 +96,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
         # test
         # Sell mode -> Buy mode
-        #singleton_data.instance().setSwitchMode(True)
+        #singleton_data.instance().setSwitchMode(False)
         #singleton_data.instance().setMode("Sell")
         #singleton_data.getInstance().setAllowBuy(True)
         #singleton_data.getInstance().setAllowSell(True)
@@ -119,7 +127,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
             if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
             #if True:
                 if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH \
-                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
+                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH\
+                        or self.user_mode == 11:
+
                     logger.info("[Long Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
                     net_order.net_buy(self)
 
@@ -154,8 +164,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
             ##### Buying Logic #####
             # rsi < 30.0 & stoch_d < 20.0
             if not singleton_data.getInstance().getAllowSell():
-                if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH or \
-                        self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
+                if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH \
+                    or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
+
                     logger.info("[Short Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
 
                     position = self.exchange.get_position()
@@ -181,8 +192,8 @@ class CustomOrderManager(OrderManager, threading.Thread):
             # rsi > 70.0 & stoch_d > 80.0
             elif singleton_data.getInstance().getAllowSell() and len(orders) == 0:
                 if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \
-                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH:
-                #if True:
+                        or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH\
+                        or self.user_mode == 22:
                     logger.info("[Short Mode][sell] rsi > " + str(settings.BASIC_UP_RSI)+", stoch_d > " + str(settings.BASIC_UP_STOCH))
                     net_order.net_sell(self)
 
@@ -208,13 +219,12 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
             update_1m_required = self.exchange.get_tradeBin('1m');
 
-
             if update_1m_required:
                 logger.info("----------------------------------------------------------------------------")
                 logger.info("[CustomOrderManager][run_loop] update_1m_required : " + str(update_1m_required))
                 update_5m_required = self.exchange.get_tradeBin('5m');
 
-                if(update_5m_required):
+                if update_5m_required and self.user_mode == 0 :
                     logger.info("[CustomOrderManager][run_loop] update_5m_required : " + str(update_5m_required))
 
                     self.analysis_30m = analysis.get_analysis(True, '30m')
@@ -238,7 +248,6 @@ class CustomOrderManager(OrderManager, threading.Thread):
                     self.analysis_1m = bitmex_plot.plot_update()
                 else :
                     self.analysis_1m = analysis.get_analysis(True, '1m')
-
 
                 self.check_current_strategy()
 

@@ -17,6 +17,7 @@ class OrderThread(threading.Thread):
         threading.Thread.__init__(self)
         self.custom_strategy = custom_strategy
         self.order_type = order_type
+        self.lastClosePrice = self.custom_strategy.analysis_30m['Close']
 
         singleton_data.getInstance().setOrderThread(True)
 
@@ -83,7 +84,7 @@ class OrderThread(threading.Thread):
         current_order = {}
 
         try:
-            self.custom_strategy.exchange.cancel_all_orders('All')
+            #self.custom_strategy.exchange.cancel_all_orders('All')
 
             while len(current_order) == 0:
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
@@ -108,7 +109,7 @@ class OrderThread(threading.Thread):
                     logger.info("[OrderThread][make_order] reason : " + str(current_order['text']))
                     logger.info("[OrderThread][make_order] order retry : " + str(cancel_retryCnt))
                     current_order = {}
-                    sleep(0.2)
+                    sleep(0.5)
 
                 elif current_order['ordStatus'] == 'New':
                     logger.info("[OrderThread][make_order] order Status == New")
@@ -142,8 +143,8 @@ class OrderThread(threading.Thread):
             logger.info("[OrderThread][check_order] orders : " + str(orders))
 
 
-            if abs(float(current_price) - float(orders[0]['price'])) > 30.0:
-                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 30")
+            if abs(float(current_price) - float(orders[0]['price'])) > 5000.0:
+                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 3000")
                 self.waiting_order = {}
                 self.custom_strategy.exchange.cancel_all_orders('All')
                 ret = False
