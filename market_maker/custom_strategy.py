@@ -1,5 +1,3 @@
-import os
-import pathlib
 import sys
 from time import sleep
 import pandas as pd
@@ -139,26 +137,28 @@ class CustomOrderManager(OrderManager, threading.Thread):
             elif not singleton_data.getInstance().getAllowBuy():
                 if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \
                         or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH:
-                    logger.info("[Long Mode][sell] rsi > " + str(settings.BASIC_UP_RSI) + ", stoch_d > " + str(settings.BASIC_UP_STOCH))
 
-                    position = self.exchange.get_position()
-                    currentQty = position['currentQty']
-                    logger.info("[Long Mode][sell] currentQty : " + str(currentQty))
-                    logger.info("[Long Mode][sell] isSellThreadRun() : " + str(singleton_data.getInstance().isSellThreadRun()))
+                    if not self.user_mode == 11:
+                        logger.info("[Long Mode][sell] rsi > " + str(settings.BASIC_UP_RSI) + ", stoch_d > " + str(settings.BASIC_UP_STOCH))
 
-                    if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun():
-                        sell_th = SellThread(self)
-                        sell_th.daemon=True
-                        sell_th.start()
+                        position = self.exchange.get_position()
+                        currentQty = position['currentQty']
+                        logger.info("[Long Mode][sell] currentQty : " + str(currentQty))
+                        logger.info("[Long Mode][sell] isSellThreadRun() : " + str(singleton_data.getInstance().isSellThreadRun()))
 
-                    # even if wait for buying after ordering, it would be no quentity.
-                    # swtich to buying mode
-                    elif currentQty == 0:
-                        logger.info("[Long Mode][sell] currentQty == 0 ")
-                        logger.info("[Long Mode][sell] ### switch mode from selling to buying ###")
-                        logger.info("[Long Mode][sell] cancel all buying order")
-                        self.exchange.cancel_all_orders('All')
-                        singleton_data.getInstance().setAllowBuy(True)
+                        if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun():
+                            sell_th = SellThread(self)
+                            sell_th.daemon=True
+                            sell_th.start()
+
+                        # even if wait for buying after ordering, it would be no quentity.
+                        # swtich to buying mode
+                        elif currentQty == 0:
+                            logger.info("[Long Mode][sell] currentQty == 0 ")
+                            logger.info("[Long Mode][sell] ### switch mode from selling to buying ###")
+                            logger.info("[Long Mode][sell] cancel all buying order")
+                            self.exchange.cancel_all_orders('All')
+                            singleton_data.getInstance().setAllowBuy(True)
 
         # Short Mode
         elif singleton_data.instance().getMode() == "Sell":
@@ -168,26 +168,27 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 if self.analysis_1m['rsi'].values[0] < settings.BASIC_DOWN_RSI or self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_STOCH \
                     or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH:
 
-                    logger.info("[Short Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
+                    if not self.user_mode == 22:
+                        logger.info("[Short Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
 
-                    position = self.exchange.get_position()
-                    currentQty = position['currentQty']
-                    logger.info("[Short Mode][buy] currentQty : " + str(currentQty))
-                    logger.info("[Short Mode][buy] isBuyThreadRun() : " + str(singleton_data.getInstance().isBuyThreadRun()))
+                        position = self.exchange.get_position()
+                        currentQty = position['currentQty']
+                        logger.info("[Short Mode][buy] currentQty : " + str(currentQty))
+                        logger.info("[Short Mode][buy] isBuyThreadRun() : " + str(singleton_data.getInstance().isBuyThreadRun()))
 
-                    if currentQty < 0 and not singleton_data.getInstance().isBuyThreadRun():
-                        buy_th = BuyThread(self)
-                        buy_th.daemon=True
-                        buy_th.start()
+                        if currentQty < 0 and not singleton_data.getInstance().isBuyThreadRun():
+                            buy_th = BuyThread(self)
+                            buy_th.daemon=True
+                            buy_th.start()
 
-                    # even if wait for buying after ordering, it would be no quentity.
-                    # swtich to buying mode
-                    elif currentQty == 0:
-                        logger.info("[Short Mode][buy] currentQty == 0 ")
-                        logger.info("[Short Mode][buy] ### switch mode from buying to selling ###")
-                        logger.info("[Short Mode][buy] cancel all selling order")
-                        self.exchange.cancel_all_orders('All')
-                        singleton_data.getInstance().setAllowSell(True)
+                        # even if wait for buying after ordering, it would be no quentity.
+                        # swtich to buying mode
+                        elif currentQty == 0:
+                            logger.info("[Short Mode][buy] currentQty == 0 ")
+                            logger.info("[Short Mode][buy] ### switch mode from buying to selling ###")
+                            logger.info("[Short Mode][buy] cancel all selling order")
+                            self.exchange.cancel_all_orders('All')
+                            singleton_data.getInstance().setAllowSell(True)
 
             ##### Selling Logic #####p
             # rsi > 70.0 & stoch_d > 80.0
@@ -218,12 +219,12 @@ class CustomOrderManager(OrderManager, threading.Thread):
             #self.print_status()  # Print skew, delta, etc
             #self.place_orders()  # Creates desired orders and converges to existing orders
 
-            update_1m_required = self.exchange.get_tradeBin('1m');
+            update_1m_required = self.exchange.get_tradeBin('1m')
 
             if update_1m_required:
                 logger.info("----------------------------------------------------------------------------")
                 logger.info("[CustomOrderManager][run_loop] update_1m_required : " + str(update_1m_required))
-                update_5m_required = self.exchange.get_tradeBin('5m');
+                update_5m_required = self.exchange.get_tradeBin('5m')
 
                 if update_5m_required and self.user_mode == 0 :
                     logger.info("[CustomOrderManager][run_loop] update_5m_required : " + str(update_5m_required))
@@ -268,5 +269,6 @@ def run() -> None:
             bitmex_plot.run()
 
     except (KeyboardInterrupt, SystemExit):
-        order_manager.stop()
+        logger.info("[CustomOrderManager][run] except")
+        #order_manager.stop()
         sys.exit()
