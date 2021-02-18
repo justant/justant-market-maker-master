@@ -17,7 +17,7 @@ class OrderThread(threading.Thread):
         threading.Thread.__init__(self)
         self.custom_strategy = custom_strategy
         self.order_type = order_type
-        self.lastClosePrice = self.custom_strategy.analysis_30m['Close']
+        self.lastClosePrice = self.custom_strategy.analysis_15m['Close']
 
         singleton_data.getInstance().setOrderThread(True)
 
@@ -71,10 +71,13 @@ class OrderThread(threading.Thread):
             sleep(1)
 
         # Cancel all orders
-        self.custom_strategy.exchange.cancel_all_orders('All')
-        singleton_data.getInstance().setAllowOrder(True)
-        singleton_data.getInstance().setOrderThread(False)
-        singleton_data.instance().setSwitchMode(False)
+        try:
+            self.custom_strategy.exchange.cancel_all_orders('All')
+        except Exception as ex:
+            self.PrintException()
+        finally:
+            singleton_data.getInstance().setOrderThread(False)
+            singleton_data.getInstance().setSwitchMode(False)
 
     def make_order(self):
         logger.info("[OrderThread][make_order] start")
@@ -92,7 +95,7 @@ class OrderThread(threading.Thread):
                 currentQty = abs(self.custom_strategy.exchange.get_currentQty())
 
                 logger.info("[OrderThread][make_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
-                if cancel_retryCnt < 10:
+                if cancel_retryCnt < 3:
                     current_order = self.custom_strategy.exchange.create_order(self.order_type, currentQty, current_price)
                 else :
                     #orders.append({'price': current_price + 0.5, 'orderQty': currentQty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
@@ -142,9 +145,8 @@ class OrderThread(threading.Thread):
             current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
             logger.info("[OrderThread][check_order] orders : " + str(orders))
 
-
-            if abs(float(current_price) - float(orders[0]['price'])) > 5000.0:
-                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 3000")
+            if abs(float(current_price) - float(orders[0]['price'])) > 3.0:
+                logger.info("[OrderThread][check_order] current_price(" + str(current_price) +") - order_price(" + str(orders[0]['price']) + " plus minus 3")
                 self.waiting_order = {}
                 self.custom_strategy.exchange.cancel_all_orders('All')
                 ret = False

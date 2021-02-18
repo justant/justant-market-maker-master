@@ -120,46 +120,51 @@ WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', '
 # Specify the contracts that you hold. These will be used in portfolio calculations.
 CONTRACTS = ['XBTUSD']
 
-# When 50 $ is lower than the average price, additional purchases are made.
-AVERAGING_DOWN_SIZE = 5000.0
-AVERAGING_UP_SIZE = 5000.0
+# When current price is lower than the AVERAGING price, additional purchases are made.
+AVERAGING_DOWN_SIZE = 400.0
+AVERAGING_UP_SIZE = 400.0
 
 # rsi, stoch
-BASIC_DOWN_RSI = 40.0
-BASIC_UP_RSI = 60.0
+BASIC_DOWN_RSI = 30.0
+BASIC_UP_RSI = 70.0
 
-BASIC_DOWN_STOCH = 30.0
-BASIC_UP_STOCH = 70.0
+BASIC_DOWN_STOCH = 20.0
+BASIC_UP_STOCH = 80.0
 
 # Sell ​​only when 10 $ above average price
 #MIN_SELLING_GAP = 10.0
 
 #test
-MIN_SELLING_GAP = 50.0
-MIN_BUYING_GAP = 70.0
+MIN_SELLING_GAP = 150.0
+MIN_BUYING_GAP = 150.0
 
 # After capturing the sales signal, wait for the desired price for 2 minutes.
 SELLING_WAIT = 120
 BUYING_WAIT = 120
 
 # Manual Mode :
-# 0  : Auto
-# 1  : Buying
-# 11 : Buying without condition
+# 0  : Auto. It switches direction according to long or short mode.
+# 1  : Buying. Maintain long mode regardless of Supertrend and decide Buying, Selling according to RSI and Stoch values
+# 11 : Buying without condition. Maintain long mode. No uses Supertrend, RSI, Stoch values.
+# 111 : Buying except for short mode. It will be no trade during short period.
 # 2  : Selling
-# 22 : Selling without condition
-USER_MODE = 11
-
+# 22 : Selling without condition. Maintain short mode. No uses Supertrend, RSI, Stoch values.
+# 222 : Selling except for short mode. It will be no trade during long period.
+USER_MODE = 111
 
 # first order price. after 10$, order size will be 2 times.
-# after 10$, order size will be 3 times... 4times... 5times..
-DEFAULT_ORDER_SIZE = 100
+# after 10$, order price will be 3 times... 4times... 5times..
+DEFAULT_ORDER_PRICE = 550
 
 # will be order from current_price to {current_price +- 30$}
 # it should be multiples of 10 (ex: 10, 20, 30 ,,,)
 DEFAULT_ORDER_SPAN = 10
 
-MAX_ORDER_QUENTITY = calc_max_order(DEFAULT_ORDER_SIZE, DEFAULT_ORDER_SPAN)
+DEFAULT_ORDER_DIST = 50.0
+
+#MAX_ORDER_QUENTITY = calc_max_order(DEFAULT_ORDER_PRICE, DEFAULT_ORDER_SPAN)
+# temp
+MAX_ORDER_QUENTITY = 2000
 
 DEFUALT_SWING_ORDER_SIZE = 2000
 

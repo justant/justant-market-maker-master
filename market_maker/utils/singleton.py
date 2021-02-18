@@ -135,5 +135,5 @@ class singleton_data:
         return self.aveDownCnt
 
     def setAveDownCnt(self, value):
-        #logger.info("[setAveDownCnt] :" + str(value))
+        logger.info("[setAveDownCnt] :" + str(value))
         self.aveDownCnt = value
