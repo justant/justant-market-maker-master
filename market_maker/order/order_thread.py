@@ -19,7 +19,7 @@ class OrderThread(threading.Thread):
         self.order_type = order_type
         self.lastClosePrice = self.custom_strategy.analysis_15m['Close']
 
-        singleton_data.getInstance().setOrderThread(True)
+        singleton_data.instance().setOrderThread(True)
 
         currentQty = self.custom_strategy.exchange.get_currentQty()
         logger.info("[OrderThread][run] currentQty : " + str(currentQty))
@@ -39,7 +39,7 @@ class OrderThread(threading.Thread):
     def run(self):
         logger.info("[OrderThread][run]")
 
-        while singleton_data.getInstance().getAllowOrder():
+        while singleton_data.instance().getAllowOrder():
             try:
                 # realized profit
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
@@ -56,7 +56,7 @@ class OrderThread(threading.Thread):
                 #check ordering
                 elif len(self.waiting_order) > 0:
                     if self.check_order():
-                        singleton_data.getInstance().setAllowOrder(False)
+                        singleton_data.instance().setAllowOrder(False)
                         break
 
                 else :
@@ -76,8 +76,8 @@ class OrderThread(threading.Thread):
         except Exception as ex:
             self.PrintException()
         finally:
-            singleton_data.getInstance().setOrderThread(False)
-            singleton_data.getInstance().setSwitchMode(False)
+            singleton_data.instance().setOrderThread(False)
+            singleton_data.instance().setSwitchMode(False)
 
     def make_order(self):
         logger.info("[OrderThread][make_order] start")

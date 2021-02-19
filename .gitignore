@@ -6,4 +6,5 @@ env
 .idea/
 
 key_secret.txt
+telegram_apikey.txt
 *.log

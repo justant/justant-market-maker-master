@@ -45,7 +45,7 @@ def setup_custom_logger(name, log_level=settings.LOG_LEVEL):
 def setApi():
     script_dir = pathlib.Path(__file__).parent.parent.parent
 
-    rel_path = "client_api/key_secret.txt"
+    rel_path = "client_api/bitmex_key_secret.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     r = open(abs_file_path, mode='rt', encoding='utf-8')

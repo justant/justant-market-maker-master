@@ -162,7 +162,7 @@ class ExchangeInterface:
         if bidSize == '1m' or bidSize == '5m':
             bin_data = self.bitmex.get_trade_bin(bidSize)
 
-        update_required = singleton_data.getInstance().appendOHLC_data(bin_data, bidSize)
+        update_required = singleton_data.instance().appendOHLC_data(bin_data, bidSize)
 
         return update_required
 
@@ -298,6 +298,11 @@ class ExchangeInterface:
         symbol = settings.SYMBOL
 
         return self.bitmex.minutes_of_new_data(symbol, min_span, binSize)
+
+    def get_user_margin(self):
+        logger.info("[ExchangeInterface][get_user_margin]")
+
+        return self.bitmex.get_user_margin()
 
 class OrderManager():
     def __init__(self):
@@ -587,6 +592,7 @@ class OrderManager():
                 logger.info("%4s %d @ %.*f" % (order['side'], order['leavesQty'], tickLog, order['price']))
             ret = self.exchange.cancel_bulk_orders(to_cancel)
         return ret
+
     ###
     # Position Limits
     ###

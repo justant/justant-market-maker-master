@@ -69,11 +69,11 @@ def get_analysis(getOnlyLast = False, bidSize = '1m'):
     sec_id = None
 
     if bidSize == '1m':
-        sec_id = singleton_data.getInstance().getOHLC_1m_data()
+        sec_id = singleton_data.instance().getOHLC_1m_data()
     elif bidSize == '5m':
-        sec_id = singleton_data.getInstance().getOHLC_5m_data()
+        sec_id = singleton_data.instance().getOHLC_5m_data()
     elif bidSize == '15m':
-        bin5m_data = singleton_data.getInstance().getOHLC_5m_data()
+        bin5m_data = singleton_data.instance().getOHLC_5m_data()
 
         first_idx, last_idx = trim_15m(bin5m_data)
 
@@ -124,7 +124,7 @@ def get_analysis(getOnlyLast = False, bidSize = '1m'):
         sec_id = df
 
     elif bidSize == '30m':
-        bin5m_data = singleton_data.getInstance().getOHLC_5m_data()
+        bin5m_data = singleton_data.instance().getOHLC_5m_data()
 
         first_idx, last_idx = trim_30m(bin5m_data)
 

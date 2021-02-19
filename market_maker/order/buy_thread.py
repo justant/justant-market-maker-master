@@ -16,8 +16,8 @@ class BuyThread(threading.Thread):
         logger.info("[BuyThread][run] __init__")
         threading.Thread.__init__(self)
         self.custom_strategy = custom_strategy
-        singleton_data.getInstance().setAllowSell(False)
-        singleton_data.getInstance().setBuyThread(True)
+        singleton_data.instance().setAllowSell(False)
+        singleton_data.instance().setBuyThread(True)
 
         # default(20.0) * (current_quantity / max_order_quantity)
         # The maximum value is the default even if the quantity you have now is greater than max_order.
@@ -55,7 +55,7 @@ class BuyThread(threading.Thread):
     def run(self):
         logger.info("[BuyThread][run]")
 
-        while not singleton_data.getInstance().getAllowBuy():
+        while not singleton_data.instance().getAllowBuy():
             try:
                 # realized profit
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
@@ -85,7 +85,7 @@ class BuyThread(threading.Thread):
                 #check buying order
                 elif len(self.waiting_buy_order) > 0:
                     if self.check_buy_order(avgCostPrice):
-                        singleton_data.getInstance().setAllowSell(True)
+                        singleton_data.instance().setAllowSell(True)
                         break
 
                 else :
@@ -105,7 +105,7 @@ class BuyThread(threading.Thread):
         except Exception as ex:
             self.PrintException()
         finally:
-            singleton_data.getInstance().setBuyThread(False)
+            singleton_data.instance().setBuyThread(False)
 
     def make_buy_order(self):
         logger.info("[BuyThread][make_buy_order] start")
@@ -180,7 +180,7 @@ class BuyThread(threading.Thread):
             # buying complete
             logger.info("[BuyThread][check_buy_order] buying complete!")
             self.custom_strategy.exchange.cancel_all_orders('All')
-            singleton_data.getInstance().setAveDownCnt(0)
+            singleton_data.instance().setAveDownCnt(0)
 
             # expectedProfit 수정 필요
             #logger.info("[BuyThread][check_buy_order] ######  profit : + " + str(self.expectedProfit) + "$  ######")

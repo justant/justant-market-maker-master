@@ -14,6 +14,7 @@ from market_maker.settings import settings
 import threading
 from market_maker.utils.singleton import singleton_data
 from market_maker.utils import log
+from market_maker.utils.telegram import Telegram
 
 LOOP_INTERVAL = 1
 
@@ -41,50 +42,56 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
         self.user_mode = settings.USER_MODE
 
+        #self.telegram = Telegram(self)
+        telegram_th = Telegram(self)
+        telegram_th.daemon=True
+        telegram_th.start()
+
         position = self.exchange.get_position()
+
         currentQty = position['currentQty']
 
         # default : 0, test : 1~n
-        #singleton_data.getInstance().setAveDownCnt(1)
+        #singleton_data.instance().setAveDownCnt(1)
 
         # 1, 11, 2, 22 condtion is for Testing
         if self.user_mode == 0 or self.user_mode == 111 or self.user_mode == 222:
             if (self.analysis_15m['Direction'] == "Long").bool():
                 singleton_data.instance().setMode("Long")
                 if abs(currentQty) > 0:
-                    singleton_data.getInstance().setAllowBuy(False)
+                    singleton_data.instance().setAllowBuy(False)
                 else :
-                    singleton_data.getInstance().setAllowBuy(True)
+                    singleton_data.instance().setAllowBuy(True)
             elif (self.analysis_15m['Direction'] == "Short").bool():
                 singleton_data.instance().setMode("Short")
                 if abs(currentQty) > 0:
-                    singleton_data.getInstance().setAllowSell(False)
+                    singleton_data.instance().setAllowSell(False)
                 else :
-                    singleton_data.getInstance().setAllowSell(True)
+                    singleton_data.instance().setAllowSell(True)
         # Forced Buying mode
         elif self.user_mode == 1 or self.user_mode == 11:
             logger.info("[strategy] Forced Buying mode")
             singleton_data.instance().setMode("Long")
-            singleton_data.getInstance().setAllowBuy(True)
-            singleton_data.getInstance().setAllowSell(False)
+            singleton_data.instance().setAllowBuy(True)
+            singleton_data.instance().setAllowSell(False)
 
         # Forced Selling mode
         elif self.user_mode == 2 or self.user_mode == 22:
             logger.info("[strategy] Forced Selling mode")
             singleton_data.instance().setMode("Short")
-            singleton_data.getInstance().setAllowBuy(False)
-            singleton_data.getInstance().setAllowSell(True)
+            singleton_data.instance().setAllowBuy(False)
+            singleton_data.instance().setAllowSell(True)
 
 
-        logger.info("[strategy][__init__] getMode() : " + str(singleton_data.getInstance().getMode()))
-        logger.info("[strategy][__init__] getAllowBuy() : " + str(singleton_data.getInstance().getAllowBuy()))
-        logger.info("[strategy][__init__] getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()))
+        logger.info("[strategy][__init__] getMode() : " + str(singleton_data.instance().getMode()))
+        logger.info("[strategy][__init__] getAllowBuy() : " + str(singleton_data.instance().getAllowBuy()))
+        logger.info("[strategy][__init__] getAllowSell() : " + str(singleton_data.instance().getAllowSell()))
 
 
     def check_addtional_buy(self):
         #should be executed when it is in the normal state
         # 300.0 *  2^n
-        p = 2 ** int(singleton_data.getInstance().getAveDownCnt())
+        p = 2 ** int(singleton_data.instance().getAveDownCnt())
         self.averagingDownSize = settings.AVERAGING_DOWN_SIZE * p
 
         # check Additional buying #
@@ -103,11 +110,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 logger.info("[check_addtional_buy] Additional buying fail because remaining buy orders : " + str(buy_orders))
 
             else :
-                aveCnt = singleton_data.getInstance().getAveDownCnt() + 1
-                singleton_data.getInstance().setAveDownCnt(aveCnt)
+                aveCnt = singleton_data.instance().getAveDownCnt() + 1
+                singleton_data.instance().setAveDownCnt(aveCnt)
                 logger.info("[check_addtional_buy] aveCnt : " + str(aveCnt))
 
-                singleton_data.getInstance().setAllowBuy(True)
+                singleton_data.instance().setAllowBuy(True)
 
                 return True
 
@@ -116,7 +123,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
     def check_addtional_sell(self):
         #should be executed when it is in the normal state
         # 300.0 *  2^n
-        p = 2 ** int(singleton_data.getInstance().getAveDownCnt())
+        p = 2 ** int(singleton_data.instance().getAveDownCnt())
         self.averagingUpSize = settings.AVERAGING_UP_SIZE * p
 
         # check Additional selling #
@@ -135,11 +142,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 logger.info("[check_addtional_sell] Additional selling fail because remaining sell orders : " + str(sell_orders))
 
             else :
-                aveCnt = singleton_data.getInstance().getAveDownCnt() + 1
-                singleton_data.getInstance().setAveDownCnt(aveCnt)
+                aveCnt = singleton_data.instance().getAveDownCnt() + 1
+                singleton_data.instance().setAveDownCnt(aveCnt)
                 logger.info("[check_addtional_sell] aveCnt : " + str(aveCnt))
 
-                singleton_data.getInstance().setAllowSell(True)
+                singleton_data.instance().setAllowSell(True)
 
                 return True
 
@@ -155,25 +162,25 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
         logger.info(str(TAG) + " current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
         logger.info(str(TAG) + " ['rsi'] " + str(self.analysis_1m['rsi'].values[0])[:5] + " + ['stoch_d'] " + str(self.analysis_1m['stoch_d'].values[0])[:5] + " = " + str(self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0])[:5])
-        logger.info(str(TAG) + " getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()) + ", getAllowSell() : " + str(singleton_data.getInstance().getAllowSell()) + ", len(orders) : " + str(len(orders)))
+        logger.info(str(TAG) + " getAllowBuy() " + str(singleton_data.instance().getAllowBuy()) + ", getAllowSell() : " + str(singleton_data.instance().getAllowSell()) + ", len(orders) : " + str(len(orders)))
 
         # test
         # Short mode -> Long mode
         #singleton_data.instance().setSwitchMode(True)
         #singleton_data.instance().setMode("Long")
-        #singleton_data.getInstance().setAllowBuy(True)
-        #singleton_data.getInstance().setAllowSell(False)
+        #singleton_data.instance().setAllowBuy(True)
+        #singleton_data.instance().setAllowSell(False)
 
         if singleton_data.instance().getSwitchMode():
             logger.info("[strategy][switch mode] getSwitchMode : True")
             logger.info("[strategy][switch mode] currentQty : " + str(currentQty))
             if (singleton_data.instance().getMode() == "Long" and currentQty < 0) or (singleton_data.instance().getMode() == "Short" and currentQty > 0):
-                if singleton_data.getInstance().isOrderThreadRun():
+                if singleton_data.instance().isOrderThreadRun():
                     logger.info("[strategy][switch mode] isOrderThreadRun : True")
                 else :
                     self.exchange.cancel_all_orders('All')
 
-                    singleton_data.getInstance().setAllowOrder(True)
+                    singleton_data.instance().setAllowOrder(True)
 
                     order_th = None
                     if singleton_data.instance().getMode() == "Long":
@@ -200,13 +207,13 @@ class CustomOrderManager(OrderManager, threading.Thread):
                     or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] < settings.BASIC_DOWN_RSI + settings.BASIC_DOWN_STOCH \
                     or self.user_mode == 11:
 
-                    if singleton_data.getInstance().getAllowBuy() and len(orders) == 0:
+                    if singleton_data.instance().getAllowBuy() and len(orders) == 0:
                         logger.info("[Long Mode][buy] rsi < " + str(settings.BASIC_DOWN_RSI) + ", stoch_d < " + str(settings.BASIC_DOWN_STOCH))
                         net_order.bulk_net_buy(self)
             else:
                 ##### Selling Logic #####
                 # rsi > 70.0 & stoch_d > 80.0
-                if not singleton_data.getInstance().getAllowBuy():
+                if not singleton_data.instance().getAllowBuy():
                     ##### Check Addtional Buy ####
                     if self.check_addtional_buy():
                         return
@@ -220,9 +227,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
                             position = self.exchange.get_position()
                             currentQty = position['currentQty']
                             logger.info("[Long Mode][sell] currentQty : " + str(currentQty))
-                            logger.info("[Long Mode][sell] isSellThreadRun() : " + str(singleton_data.getInstance().isSellThreadRun()))
+                            logger.info("[Long Mode][sell] isSellThreadRun() : " + str(singleton_data.instance().isSellThreadRun()))
 
-                            if currentQty > 0 and not singleton_data.getInstance().isSellThreadRun():
+                            if currentQty > 0 and not singleton_data.instance().isSellThreadRun():
                                 sell_th = SellThread(self)
                                 sell_th.daemon=True
                                 sell_th.start()
@@ -234,7 +241,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
                                 logger.info("[Long Mode][sell] ### switch mode from selling to buying ###")
                                 logger.info("[Long Mode][sell] cancel all buying order")
                                 self.exchange.cancel_all_orders('All')
-                                singleton_data.getInstance().setAllowBuy(True)
+                                singleton_data.instance().setAllowBuy(True)
 
         # Short Mode
         elif singleton_data.instance().getMode() == "Short":
@@ -244,7 +251,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
             ##### Selling Logic #####
             # rsi > 70.0 & stoch_d > 80.0
-            if singleton_data.getInstance().getAllowSell() and len(orders) == 0:
+            if singleton_data.instance().getAllowSell() and len(orders) == 0:
                 if self.analysis_1m['rsi'].values[0] > settings.BASIC_UP_RSI or self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_STOCH \
                         or self.analysis_1m['rsi'].values[0] + self.analysis_1m['stoch_d'].values[0] > settings.BASIC_UP_RSI + settings.BASIC_UP_STOCH \
                         or self.user_mode == 22:
@@ -255,7 +262,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
                 ##### Buying Logic #####
                 # rsi < 30.0 & stoch_d < 20.0
 
-                if not singleton_data.getInstance().getAllowSell():
+                if not singleton_data.instance().getAllowSell():
                     ##### Check Addtional Sell ####
                     if self.check_addtional_sell():
                         return
@@ -269,9 +276,9 @@ class CustomOrderManager(OrderManager, threading.Thread):
                                 position = self.exchange.get_position()
                                 currentQty = position['currentQty']
                                 logger.info("[Short Mode][buy] currentQty : " + str(currentQty))
-                                logger.info("[Short Mode][buy] isBuyThreadRun() : " + str(singleton_data.getInstance().isBuyThreadRun()))
+                                logger.info("[Short Mode][buy] isBuyThreadRun() : " + str(singleton_data.instance().isBuyThreadRun()))
 
-                                if currentQty < 0 and not singleton_data.getInstance().isBuyThreadRun():
+                                if currentQty < 0 and not singleton_data.instance().isBuyThreadRun():
                                     buy_th = BuyThread(self)
                                     buy_th.daemon=True
                                     buy_th.start()
@@ -283,7 +290,7 @@ class CustomOrderManager(OrderManager, threading.Thread):
                                     logger.info("[Short Mode][buy] ### switch mode from buying to selling ###")
                                     logger.info("[Short Mode][buy] cancel all selling order")
                                     self.exchange.cancel_all_orders('All')
-                                    singleton_data.getInstance().setAllowSell(True)
+                                    singleton_data.instance().setAllowSell(True)
 
 
 
@@ -328,12 +335,12 @@ class CustomOrderManager(OrderManager, threading.Thread):
 
                         if (self.analysis_15m['Direction'] == "Long").bool():
                             singleton_data.instance().setMode("Long")
-                            singleton_data.getInstance().setAllowBuy(True)
-                            singleton_data.getInstance().setAllowSell(False)
+                            singleton_data.instance().setAllowBuy(True)
+                            singleton_data.instance().setAllowSell(False)
                         elif (self.analysis_15m['Direction'] == "Short").bool():
                             singleton_data.instance().setMode("Short")
-                            singleton_data.getInstance().setAllowBuy(False)
-                            singleton_data.getInstance().setAllowSell(True)
+                            singleton_data.instance().setAllowBuy(False)
+                            singleton_data.instance().setAllowSell(True)
                     else:
                         singleton_data.instance().setSwitchMode(False)
 

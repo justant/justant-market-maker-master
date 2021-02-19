@@ -51,7 +51,7 @@ class bitmex_plot():
     def run(self):
         logger.info("[bitmex_plot][run]")
 
-        sec_id = singleton_data.getInstance().getOHLC_data()
+        sec_id = singleton_data.instance().getOHLC_data()
 
         self.sec_id_ochl = np.array(pd.DataFrame({'0':date2num(sec_id.index),#.to_pydatetime()),
                                              '1':sec_id.open,
@@ -120,7 +120,7 @@ class bitmex_plot():
         #logger.info("[plotThread][animate] self.update_flag " + str(self.update_flag))
 
         if self.update_flag:
-            sec_id = singleton_data.getInstance().getOHLC_data()
+            sec_id = singleton_data.instance().getOHLC_data()
 
             sec_id_ochl = np.array(pd.DataFrame({'0':date2num(sec_id.index),
                                                  '1':sec_id.open,

@@ -29,8 +29,8 @@ def bulk_net_buy(custom_strategy):
     settings.MAX_ORDER_QUENTITY = total_qty
     logger.info("[net_order][normal_buy] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
 
-    singleton_data.getInstance().setAllowBuy(False)
-    logger.info("[net_order][normal_buy] getAllowBuy() " + str(singleton_data.getInstance().getAllowBuy()))
+    singleton_data.instance().setAllowBuy(False)
+    logger.info("[net_order][normal_buy] getAllowBuy() " + str(singleton_data.instance().getAllowBuy()))
 
 def bulk_net_sell(custom_strategy):
     current_price = custom_strategy.exchange.get_instrument()['lastPrice'] + 3.5
@@ -56,5 +56,5 @@ def bulk_net_sell(custom_strategy):
     settings.MAX_ORDER_QUENTITY = total_qty
     logger.info("[net_order][normal_sell] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
 
-    singleton_data.getInstance().setAllowSell(False)
-    logger.info("[net_order][normal_sell] getAllowSell() " + str(singleton_data.getInstance().getAllowSell()))
+    singleton_data.instance().setAllowSell(False)
+    logger.info("[net_order][normal_sell] getAllowSell() " + str(singleton_data.instance().getAllowSell()))

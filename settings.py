@@ -15,6 +15,8 @@ BASE_URL = "https://www.bitmex.com/api/v1/" # Once you're ready, uncomment this.
 API_KEY = "test2"
 API_SECRET = "test2"
 
+# Telegram API Key
+TELEGRAM_API_KEY = "test3"
 
 ########################################################################################################################
 # Target
