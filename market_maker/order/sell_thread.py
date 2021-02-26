@@ -140,7 +140,7 @@ class SellThread(threading.Thread):
 
                 logger.info("[SellThread][make_sell_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
 
-                if not currentQty == 0:
+                if currentQty == 0:
                     logger.info("[BuyThread][make_buy_order] The first order was established before the order was cancelled")
                     break
 
