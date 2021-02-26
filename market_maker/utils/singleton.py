@@ -32,6 +32,8 @@ class singleton_data:
         self.is_sell_thread_run = False
         self.is_buy_thread_run = False
 
+        self.telegram_th = None
+
         self.aveDownCnt = 0
     def setMode(self, mode):
         logger.info("[setMode] : " + str(mode))
@@ -137,3 +139,12 @@ class singleton_data:
     def setAveDownCnt(self, value):
         logger.info("[setAveDownCnt] :" + str(value))
         self.aveDownCnt = value
+
+    def setTelegramThread(self, value):
+        logger.info("[setTelegramThread] :" + str(value))
+        self.telegram_th = value
+
+    def sendTelegram(self, value):
+        logger.info("[sendTelegram] :" + str(value))
+        self.telegram_th.send_msg(value)
+

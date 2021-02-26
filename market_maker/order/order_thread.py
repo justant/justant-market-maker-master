@@ -1,3 +1,4 @@
+from copy import deepcopy
 import linecache
 import sys
 import threading
@@ -44,6 +45,7 @@ class OrderThread(threading.Thread):
                 # realized profit
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                 avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
+                avgCostPrice_copy = deepcopy(avgCostPrice)
                 currentQty = self.custom_strategy.exchange.get_currentQty()
 
                 logger.info("[OrderThread][run] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
@@ -51,17 +53,25 @@ class OrderThread(threading.Thread):
                 if len(self.waiting_order) == 0:
                     # ordering condition
                     self.waiting_order = self.make_order()
+                    self.waiting_order_copy = deepcopy(self.waiting_order)
                     logger.info("[OrderThread][run] NEW : waiting_order : " + str(self.waiting_order))
 
                 #check ordering
                 elif len(self.waiting_order) > 0:
                     if self.check_order():
                         singleton_data.instance().setAllowOrder(False)
-                        break
 
-                else :
-                    logger.info("[OrderThread][run] len(waiting_order) : " + str(len(self.waiting_order)))
-                    logger.info("[OrderThread][run] waiting_order : " + str(self.waiting_order))
+                        sleep(5)
+                        #report
+                        margin = self.custom_strategy.exchange.get_user_margin()
+                        margin_str = '포지션 강제 정리\n'
+                        margin_str += '판매가    : ' + str(self.waiting_order_copy['price']) + '\n'
+                        margin_str += '평균가    : ' + str(avgCostPrice_copy) + '\n'
+                        margin_str += '수량     : ' + str(self.waiting_order_copy['orderQty']) + '\n'
+                        margin_str +=  '실현 수익 : ' + str(margin['prevRealisedPnl']/100000000)[:7] + '\n'
+                        singleton_data.instance().sendTelegram(margin_str)
+
+                        break
 
                 sleep(1)
             except Exception as ex:

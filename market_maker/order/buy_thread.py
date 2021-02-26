@@ -1,3 +1,4 @@
+from copy import deepcopy
 import linecache
 import sys
 import threading
@@ -39,6 +40,7 @@ class BuyThread(threading.Thread):
         #self.allow_stop_loss = False
         #self.exchange = ExchangeInterface(settings.DRY_RUN)
 
+
     def PrintException(self):
         exc_type, exc_obj, tb = sys.exc_info()
         f = tb.tb_frame
@@ -60,6 +62,7 @@ class BuyThread(threading.Thread):
                 # realized profit
                 current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
                 avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
+                avgCostPrice_copy = deepcopy(avgCostPrice)
                 currentQty = self.custom_strategy.exchange.get_currentQty()
 
                 logger.info("[BuyThread][run] [" + str(self.wait_cnt) +"] current_price : " + str(current_price) + ", avgCostPrice : " + str(avgCostPrice) + ", currentQty : " + str(currentQty))
@@ -70,10 +73,11 @@ class BuyThread(threading.Thread):
                         logger.info("[BuyThread][run] current_price(" + str(current_price) +") < avgCostPrice(" + str(avgCostPrice) + ") - minBuyingGap(" + str(self.minBuyingGap) + ")")
 
                         self.waiting_buy_order = self.make_buy_order()
+                        self.waiting_buy_order_copy = deepcopy(self.waiting_buy_order)
                         logger.info("[BuyThread][run] NEW : waiting_buy_order : " + str(self.waiting_buy_order))
 
-                    # waiting (default:120) secs condition
-                    elif float(current_price) < float(avgCostPrice):
+                    # waiting (default:15) secs condition
+                    else:
                         self.wait_cnt += 1
 
                         if self.wait_cnt > settings.SELLING_WAIT:
@@ -86,11 +90,18 @@ class BuyThread(threading.Thread):
                 elif len(self.waiting_buy_order) > 0:
                     if self.check_buy_order(avgCostPrice):
                         singleton_data.instance().setAllowSell(True)
-                        break
 
-                else :
-                    logger.info("[BuyThread][run] len(waiting_buy_order) : " + str(len(self.waiting_buy_order)))
-                    logger.info("[BuyThread][run] waiting_buy_order : " + str(self.waiting_buy_order))
+                        sleep(5)
+                        #report
+                        margin = self.custom_strategy.exchange.get_user_margin()
+                        margin_str = '수익 정리\n'
+                        margin_str += '판매가    : ' + str(self.waiting_buy_order_copy['price']) + '\n'
+                        margin_str += '평균가    : ' + str( ) + '\n'
+                        margin_str += '수량     : ' + str(self.waiting_buy_order_copy['orderQty']) + '\n'
+                        margin_str +=  '실현 수익 : ' + str(margin['prevRealisedPnl']/100000000)[:7] + '\n'
+                        singleton_data.instance().sendTelegram(margin_str)
+
+                        break
 
                 sleep(1)
             except Exception as ex:
@@ -129,6 +140,11 @@ class BuyThread(threading.Thread):
                 currentQty = abs(self.custom_strategy.exchange.get_currentQty())
 
                 logger.info("[BuyThread][make_buy_order] current_price : " + str(current_price) + ", currentQty : " + str(currentQty))
+
+                if not currentQty == 0:
+                    logger.info("[BuyThread][make_buy_order] The first order was established before the order was cancelled")
+                    break
+
                 if cancel_retryCnt < 10:
                     #buy_orders.append({'price': current_price, 'orderQty': currentQty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
                     current_buy_order = self.custom_strategy.exchange.create_order('Buy', currentQty, current_price)

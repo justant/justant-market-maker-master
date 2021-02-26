@@ -43,9 +43,11 @@ class CustomOrderManager(OrderManager, threading.Thread):
         self.user_mode = settings.USER_MODE
 
         #self.telegram = Telegram(self)
-        telegram_th = Telegram(self)
-        telegram_th.daemon=True
-        telegram_th.start()
+        self.telegram_th = Telegram(self)
+        self.telegram_th.daemon=True
+        self.telegram_th.start()
+        singleton_data.instance().setTelegramThread(self.telegram_th)
+
 
         position = self.exchange.get_position()
 
@@ -337,10 +339,13 @@ class CustomOrderManager(OrderManager, threading.Thread):
                             singleton_data.instance().setMode("Long")
                             singleton_data.instance().setAllowBuy(True)
                             singleton_data.instance().setAllowSell(False)
+                            singleton_data.instance().sendTelegram("Switch from Short to Long")
+
                         elif (self.analysis_15m['Direction'] == "Short").bool():
                             singleton_data.instance().setMode("Short")
                             singleton_data.instance().setAllowBuy(False)
                             singleton_data.instance().setAllowSell(True)
+                            singleton_data.instance().sendTelegram("Switch from Long to Short")
                     else:
                         singleton_data.instance().setSwitchMode(False)
 
@@ -368,5 +373,7 @@ def run() -> None:
 
     except (KeyboardInterrupt, SystemExit):
         logger.info("[CustomOrderManager][run] except")
+
+        singleton_data.instance().sendTelegram("오류로 인해 시스템 종료!!")
         #order_manager.stop()
         sys.exit()

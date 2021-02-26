@@ -19,6 +19,7 @@ class Telegram(threading.Thread):
 
         self.custom_strategy = custom_strategy
         self.setApiKey()
+        #self.chat_id = '1653838244'
 
     def run(self):
         """Start the bot."""
@@ -27,28 +28,30 @@ class Telegram(threading.Thread):
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
 
-        updater = Updater(settings.TELEGRAM_API_KEY, use_context=True)
+        self.updater = Updater(settings.TELEGRAM_API_KEY, use_context=True)
 
         # Get the dispatcher to register handlers
-        dp = updater.dispatcher
+        self.dp = self.updater.dispatcher
 
         # on different commands - answer in Telegram
-        dp.add_handler(CommandHandler("help", self.help))
-        dp.add_handler(CommandHandler("mode", self.mode))
-        dp.add_handler(CommandHandler("margin", self.margin))
-        dp.add_handler(CommandHandler("signal", self.signal))
-        dp.add_handler(CommandHandler("order", self.order))
+        self.dp.add_handler(CommandHandler("help", self.help))
+        self.dp.add_handler(CommandHandler("mode", self.mode))
+        self.dp.add_handler(CommandHandler("margin", self.margin))
+        self.dp.add_handler(CommandHandler("signal", self.signal))
+        self.dp.add_handler(CommandHandler("btc_price", self.btc_price))
+        self.dp.add_handler(CommandHandler("open_position", self.open_position))
+        self.dp.add_handler(CommandHandler("order", self.order))
 
         # on noncommand i.e message - echo the message on Telegram
-        dp.add_handler(MessageHandler(Filters.text, self.echo))
+        self.dp.add_handler(MessageHandler(Filters.text, self.help))
 
         # log all errors
-        dp.add_error_handler(self.error)
+        self.dp.add_error_handler(self.error)
 
         # Start the Bot
-        updater.start_polling()
+        self.updater.start_polling()
 
-        # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
         # SIGTERM or SIGABRT. This should be used most of the time, since
         # start_polling() is non-blocking and will stop the bot gracefully.
         # updater.idle()
@@ -82,35 +85,38 @@ class Telegram(threading.Thread):
         update.message.reply_text('/help : Show all command we provide\n'
                                   '/mode : Short or Long currently\n'
                                   '/margin : Show what you have\n'
+                                  '/signal : Show Stoch, RSI and Super Trend\n'
+                                  '/btc_price : Show current BTC price\n'
+                                  '/open_position : Ordered position\n'
                                   '/signal : Show Stoch and RSI\n'
                                   '/order : Show order')
-
-    def mode(self, update, context):
-        update.message.reply_text('Hi!')
 
     def mode(self, update, context):
         update.message.reply_text('Mode : ' + str(singleton_data.instance().getMode()))
 
     def margin(self, update, context):
         margin = self.custom_strategy.exchange.get_user_margin()
-        margin_str =  '지갑 잔고      : ' + str(margin['walletBalance']/100000000) + '\n'
+        margin_str =  '지갑 잔고      : ' + str(margin['walletBalance']/100000000)[:8] + '\n'
         margin_str += '미실현 손익   : ' + str(margin['unrealisedPnl']/100000000) + '\n'
-        margin_str += '마진 밸런스   : ' + str(margin['marginBalance']/100000000) + '\n'
-        margin_str += '포지션 마진   : ' + str(margin['maintMargin']/100000000) + '\n'
-        margin_str += '주문 마진       : ' + str(margin['initMargin']/100000000) + '\n'
-        margin_str += '사용가능 잔고 : ' + str(margin['excessMargin']/100000000) + '\n'
-        margin_str += '마진 사용       : ' + str(margin['marginUsedPcnt'] * 100) + '\n'
-        margin_str += '레버리지        : ' + str(margin['marginLeverage']) + '\n'
+        margin_str += '마진 밸런스   : ' + str(margin['marginBalance']/100000000)[:8] + '\n'
+        margin_str += '포지션 마진   : ' + str(margin['maintMargin']/100000000)[:8] + '\n'
+        margin_str += '주문 마진       : ' + str(margin['initMargin']/100000000)[:8] + '\n'
+        margin_str += '사용가능 잔고 : ' + str(margin['excessMargin']/100000000)[:8] + '\n'
+        margin_str += '마진 사용       : ' + str(margin['marginUsedPcnt'] * 100)[:4] + '\n'
+        margin_str += '레버리지        : ' + str(margin['marginLeverage'])[:4] + '\n'
 
         update.message.reply_text(margin_str)
 
     def signal(self, update, context):
-        signal_str = " [rsi] " + str(self.custom_strategy.analysis_1m['rsi'].values[0])[:5] + " + [stoch_d] " + str(self.custom_strategy.analysis_1m['stoch_d'].values[0])[:5] + " = " + str(self.custom_strategy.analysis_1m['rsi'].values[0] + self.custom_strategy.analysis_1m['stoch_d'].values[0])[:5]
+        signal_str = "[rsi] " + str(self.custom_strategy.analysis_1m['rsi'].values[0])[:5] + " + [stoch_d] " + str(self.custom_strategy.analysis_1m['stoch_d'].values[0])[:5] + " = " + str(self.custom_strategy.analysis_1m['rsi'].values[0] + self.custom_strategy.analysis_1m['stoch_d'].values[0])[:5] + '\n'
+        signal_str += "[super_trend] " + str(self.custom_strategy.analysis_15m['SuperTrend'][0])[:7]
         update.message.reply_text(signal_str)
 
     def order(self, update, context):
+        order_dist = settings.CURRENT_ORDER_DIST
+
         buy_orders = self.custom_strategy.exchange.get_orders('Buy')
-        order_str = ''
+        order_str = 'Order List\n' + '================\n ORDER_DIST : ' + str(order_dist) +'\n'
         if len(buy_orders) > 0:
             order_str += 'Buy order list\n'
             for i in buy_orders:
@@ -122,14 +128,36 @@ class Telegram(threading.Thread):
             for i in sell_orders:
                 order_str += '[주문가격] : ' + str(i['price']) + ' [수량] : ' + str(i['orderQty']) + '\n'
 
+
         update.message.reply_text(order_str)
 
+    def btc_price(self, update, context):
+        current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
+        update.message.reply_text(str(current_price) + '$')
 
+    def open_position(self, update, context):
+        current_price = self.custom_strategy.exchange.get_instrument()['lastPrice']
+        avgCostPrice = self.custom_strategy.exchange.get_avgCostPrice()
+        currentQty = self.custom_strategy.exchange.get_currentQty()
+
+        position_str =  '현재 가격 : ' + str(current_price) + '$\n'
+        position_str +=  '평균 가격 : ' + str(avgCostPrice) + '\n'
+        position_str += '수량     : ' + str(currentQty) + '\n'
+
+        update.message.reply_text(position_str)
+    '''
     def echo(self, update, context):
         """Echo the user message."""
         update.message.reply_text("You can use /help command")
-
+    '''
     def error(self, update, context):
         """Log Errors caused by Updates."""
 
         execept_logger.info('[telegram] Update "%s" caused error "%s"', update, context.error)
+
+    def send_msg(self, msg):
+
+        try:
+            self.dp.bot.sendMessage('1653838244', msg)
+        except Exception as ex:
+            self.PrintException()

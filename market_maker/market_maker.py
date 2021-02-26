@@ -703,8 +703,8 @@ class OrderManager():
 
 
     def restart(self):
-        logger.info("[OrderManager][restart]")
-        logger.info("Restarting the market maker...")
+        logger.info("Restarting the market maker")
+        singleton_data.instance().sendTelegram("Restarting the market maker")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 #
 # Helpers
