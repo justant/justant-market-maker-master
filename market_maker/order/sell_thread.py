@@ -27,11 +27,13 @@ class SellThread(threading.Thread):
         currentQty = self.custom_strategy.exchange.get_currentQty()
         logger.info("[SellThread][run] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
 
-        self.minSellingGap = 3.0
+        self.minSellingGap = 50.0
         if currentQty > settings.MAX_ORDER_QUENTITY:
-            self.minSellingGap = self.minSellingGap + settings.MIN_SELLING_GAP
+            #self.minSellingGap = self.minSellingGap + settings.MIN_SELLING_GAP
+            self.minSellingGap = self.minSellingGap
         else :
-            self.minSellingGap = self.minSellingGap + float(settings.MIN_SELLING_GAP) * float(currentQty / settings.MAX_ORDER_QUENTITY)
+            #self.minSellingGap = self.minSellingGap + float(settings.MIN_SELLING_GAP) * float(currentQty / settings.MAX_ORDER_QUENTITY)
+            self.minSellingGap = self.minSellingGap + float(settings.MIN_SELLING_GAP) - float(settings.MIN_SELLING_GAP) * float(currentQty / settings.MAX_ORDER_QUENTITY)
 
         logger.info("[SellThread][run] minSellingGap : " + str(self.minSellingGap))
 
@@ -218,6 +220,7 @@ class SellThread(threading.Thread):
                 # flee away 3$ form first oder_price, amend order
                 # reorder
                 self.waiting_sell_order = self.make_sell_order()
+                self.waiting_sell_order_copy = deepcopy(self.waiting_sell_order)
                 logger.info("[SellThread][check_sell_order] reorder current_price - 3$ : waiting_sell_order : " + str(self.waiting_sell_order))
             else :
                 logger.info("[SellThread][check_sell_order] The price you ordered has not dropped by more than $ 3 from the current price.")

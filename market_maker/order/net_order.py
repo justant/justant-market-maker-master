@@ -13,10 +13,11 @@ def bulk_net_buy(custom_strategy):
 
     buy_orders = []
 
+    super_trend = custom_strategy.analysis_15m['SuperTrend'][0]
     order_cnt = settings.DEFAULT_ORDER_COUNT
-    order_dist = get_order_dist(current_price, custom_strategy.analysis_15m['SuperTrend'][0], order_cnt)
+    order_dist = get_order_dist(current_price, super_trend, order_cnt)
 
-    default_Qty = get_qty(99, current_price)
+    default_Qty = get_qty(95, current_price)
     #default_Qty = settings.DEFAULT_ORDER_PRICE
     logger.info("[net_order][bulk_net_buy] default_Qty : " + str(default_Qty))
 
@@ -26,7 +27,15 @@ def bulk_net_buy(custom_strategy):
     total_qty = 0
 
     for i in range(1, order_cnt + 1):
-        buy_orders.append({'price': current_price - ((i - 1) * order_dist), 'orderQty': default_Qty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+        if current_price - ((i - 1) * order_dist) < super_trend:
+            break
+
+        if i == 1:
+            buy_orders.append({'price': current_price + order_dist * 10, 'orderQty': default_Qty * 2, 'side': "Buy"})
+            buy_orders.append({'price': current_price - ((i - 1) * order_dist), 'orderQty': default_Qty * 2, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+        else:
+            buy_orders.append({'price': current_price - ((i - 1) * order_dist), 'orderQty': default_Qty, 'side': "Buy", 'execInst': "ParticipateDoNotInitiate"})
+
         total_qty = total_qty + default_Qty
 
     ret = custom_strategy.converge_orders(buy_orders, [])
@@ -46,8 +55,10 @@ def bulk_net_sell(custom_strategy):
 
     sell_orders = []
 
-    order_cnt = round(settings.DEFAULT_ORDER_COUNT * 4 / 7)
-    order_dist = get_order_dist(current_price, custom_strategy.analysis_15m['SuperTrend'][0], order_cnt)
+    #order_cnt = round(settings.DEFAULT_ORDER_COUNT * 4 / 7)
+    super_trend = custom_strategy.analysis_15m['SuperTrend'][0]
+    order_cnt = settings.DEFAULT_ORDER_COUNT
+    order_dist = get_order_dist(current_price, super_trend, order_cnt)
 
     default_Qty = get_qty(99, current_price + (order_cnt - 1) * order_dist)
     #default_Qty = settings.DEFAULT_ORDER_PRICE
@@ -58,7 +69,15 @@ def bulk_net_sell(custom_strategy):
     total_qty = 0
 
     for i in range(1, order_cnt + 1):
-        sell_orders.append({'price': current_price + ((i - 1) * order_dist), 'orderQty': default_Qty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+        if current_price + ((i - 1) * order_dist) > super_trend:
+            break
+
+        if i == 1:
+            sell_orders.append({'price': current_price - order_dist * 10, 'orderQty': default_Qty * 2, 'side': "Sell"})
+            sell_orders.append({'price': current_price + ((i - 1) * order_dist), 'orderQty': default_Qty * 2, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+        else:
+            sell_orders.append({'price': current_price + ((i - 1) * order_dist), 'orderQty': default_Qty, 'side': "Sell", 'execInst': "ParticipateDoNotInitiate"})
+
         total_qty = total_qty + default_Qty
 
     ret = custom_strategy.converge_orders(sell_orders, [])
@@ -79,7 +98,7 @@ def get_order_dist(current_price, super_trend, order_cnt):
     logger.info("[net_order][get_order_dist] order_cnt " + str(order_cnt))
 
     order_cnt = order_cnt - 1
-    dist = round((abs(current_price - super_trend) * 1.5) / order_cnt)
+    dist = round((abs(current_price - super_trend) * 1.0) / order_cnt)
 
     if dist < settings.MIN_ORDER_DIST:
         dist = settings.MIN_ORDER_DIST

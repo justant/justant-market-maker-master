@@ -27,11 +27,13 @@ class BuyThread(threading.Thread):
         currentQty = self.custom_strategy.exchange.get_currentQty()
         logger.info("[BuyThread][run] MAX_ORDER_QUENTITY : " + str(settings.MAX_ORDER_QUENTITY))
 
-        self.minBuyingGap = 3.0
+        self.minBuyingGap = 50.0
         if abs(currentQty) >= settings.MAX_ORDER_QUENTITY:
-            self.minBuyingGap = self.minBuyingGap + settings.MIN_SELLING_GAP
+            #self.minBuyingGap = self.minBuyingGap + settings.MIN_BUYING_GAP
+            self.minBuyingGap = self.minBuyingGap
         else :
-            self.minBuyingGap = self.minBuyingGap + float(settings.MIN_SELLING_GAP) * float(abs(currentQty) / settings.MAX_ORDER_QUENTITY)
+            #self.minBuyingGap = self.minBuyingGap + float(settings.MIN_BUYING_GAP) * float(abs(currentQty) / settings.MAX_ORDER_QUENTITY)
+            self.minBuyingGap = self.minBuyingGap + float(settings.MIN_BUYING_GAP) - float(settings.MIN_BUYING_GAP) * float(abs(currentQty) / settings.MAX_ORDER_QUENTITY)
 
         logger.info("[BuyThread][run] minBuyingGap : " + str(self.minBuyingGap))
 
@@ -80,8 +82,8 @@ class BuyThread(threading.Thread):
                     else:
                         self.wait_cnt += 1
 
-                        if self.wait_cnt > settings.SELLING_WAIT:
-                            logger.info("[BuyThread][run] stop buying thread because cnt < " + str(settings.SELLING_WAIT))
+                        if self.wait_cnt > settings.BUYING_WAIT:
+                            logger.info("[BuyThread][run] stop buying thread because cnt < " + str(settings.BUYING_WAIT))
 
                             # exit buy thread
                             break
@@ -96,7 +98,7 @@ class BuyThread(threading.Thread):
                         margin = self.custom_strategy.exchange.get_user_margin()
                         margin_str = '수익 정리\n'
                         margin_str += '판매가    : ' + str(self.waiting_buy_order_copy['price']) + '\n'
-                        margin_str += '평균가    : ' + str( ) + '\n'
+                        margin_str += '평균가    : ' + str(avgCostPrice_copy) + '\n'
                         margin_str += '수량     : ' + str(self.waiting_buy_order_copy['orderQty']) + '\n'
                         margin_str +=  '실현 수익 : ' + str(margin['prevRealisedPnl']/100000000)[:7] + '\n'
                         singleton_data.instance().sendTelegram(margin_str)
@@ -219,6 +221,7 @@ class BuyThread(threading.Thread):
                 # flee away 3$ form first oder_price, amend order
                 # reorder
                 self.waiting_buy_order = self.make_buy_order()
+                self.waiting_buy_order_copy = deepcopy(self.waiting_buy_order)
                 logger.info("[BuyThread][check_buy_order] reorder current_price + 3$ : waiting_buy_order : " + str(self.waiting_buy_order))
             else :
                 logger.info("[BuyThread][check_buy_order] The price you ordered has not dropped by more than $ 3 from the current price.")

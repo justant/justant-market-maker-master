@@ -19,7 +19,7 @@ STOCH_D = 3
 SIGNAL_TOL = 3
 Y_AXIS_SIZE = 12
 LINE_WIDTH = 1
-SUPER_TREND_F = 2
+SUPER_TREND_F = 3
 SUPER_TREND_P = 13
 
 logger = logging.getLogger('root')
@@ -65,7 +65,7 @@ def trim_30m(bin5m_data):
     return first_idx, last_idx
 
 
-def get_analysis(getOnlyLast = False, bidSize = '1m'):
+def get_analysis(getOnlyLast: object = False, bidSize: object = '1m') -> object:
     sec_id = None
 
     if bidSize == '1m':
